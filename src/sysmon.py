@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-# sysmon-07.py  2025-11-22 
+# sysmon.py  v0.1.0 2025-12-04
 # CPU, Disk IO and Net IO scrolling graph
 # w drill down popups and Visual Scale Change Indicators
 
 '''
+Wed 04 Dec 2025 10:20:00 AM
+
 Tue 03 Dec 2025 09:20:00 PM CST Fixed X-axis behavior - X-axis now remains fixed at 0 to time window parameter instead of scrolling, data scrolls left smoothly with full window coverage
 
 Wed 26 Nov 2025 01:01:08 AM CST Suppressed GdkPixbuf warnings - Filters out harmless GTK/Qt interaction warnings at OS level
@@ -281,7 +283,7 @@ class RealtimeMonitor:
         self.fig.tight_layout(pad=2.0)
         
         # Add version text in lower left corner
-        self.fig.text(0.01, 0.01, 'v0.0.9c 2025-12-04 10:45', fontsize=8, 
+        self.fig.text(0.01, 0.01, 'v0.1.0 2025-12-04 11:15', fontsize=8, 
                      ha='left', va='bottom', transform=self.fig.transFigure)
         
         # Enable auto-adjust on resize
