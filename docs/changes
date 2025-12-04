@@ -1,0 +1,9 @@
+Wed 26 Nov 2025 01:01:08 AM CST Suppressed GdkPixbuf warnings - Filters out harmless GTK/Qt interaction warnings at OS level
+
+Tue 26 Nov 2025 10:02:04 AM CST Fixed window geometry persistence - Now properly remembers window position and size on Linux
+
+Tue 26 Nov 2025 08:02:16 AM CST Added desktop theme inheritance - Automatically matches your system's light/dark theme
+
+Mon 24 Nov 2025 06:02:26 AM CST Fixed window geometry persistence - Now properly remembers window position and size on Linux
+
+
