@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sysmon.py  v0.1.0 2025-12-04
+# sysmon.py  v0.1.1 2025-12-05
 # CPU, Disk IO and Net IO scrolling graph
 # w drill down popups and Visual Scale Change Indicators
 
@@ -95,6 +95,7 @@ CPU_MAX_PERCENT = 100           # Maximum CPU percentage for Y-axis scaling
 DEFAULT_WINDOW_X = 100          # Default window X position
 DEFAULT_WINDOW_Y = 100          # Default window Y position
 FLASH_DURATION = 10             # Flash effect duration in frames (~500ms)
+TITLE_FONT_SIZE = 12            # Main title font size in points
 
 # Unit Conversion Constants
 BYTES_PER_KB = 1024
@@ -210,6 +211,8 @@ class RealtimeMonitor:
         self.last_net_scale_magnitude = 0   # Track order of magnitude (Kbps, Mbps, Gbps)
         self.disk_flash_counter = 0
         self.net_flash_counter = 0
+        self.disk_flash_direction = 0  # 1=up (red), -1=down (blue), 0=no flash
+        self.net_flash_direction = 0   # 1=up (red), -1=down (blue), 0=no flash
         # Apply desktop theme before creating any figures
         _apply_qt_desktop_theme()
 
@@ -231,7 +234,7 @@ class RealtimeMonitor:
         except Exception:
             pass
         
-        self.fig.suptitle('SysMon', fontsize=16, fontweight='bold')
+        self.fig.suptitle('SysMon', fontsize=TITLE_FONT_SIZE, fontweight='bold')
         
         # Record the default axes facecolor to restore after flashes
         self.default_axes_facecolor = self.axes[0].get_facecolor()
@@ -283,7 +286,7 @@ class RealtimeMonitor:
         self.fig.tight_layout(pad=2.0)
         
         # Add version text in lower left corner
-        self.fig.text(0.01, 0.01, 'v0.1.0 2025-12-04 11:15', fontsize=8, 
+        self.fig.text(0.01, 0.01, 'v0.1.1 2025-12-05 15:55', fontsize=8, 
                      ha='left', va='bottom', transform=self.fig.transFigure)
         
         # Enable auto-adjust on resize
@@ -671,14 +674,29 @@ class RealtimeMonitor:
                     current_magnitude = self.get_magnitude_level(max_val, BYTES_PER_KB)  # Bytes: KB=1, MB=2, GB=3
                     if current_magnitude != self.last_disk_scale_magnitude and self.last_disk_scale_magnitude > 0:
                         self.disk_flash_counter = FLASH_DURATION  # Flash for FLASH_DURATION frames (~500ms)
+                        # Determine direction: 1=up (red), -1=down (blue)
+                        if current_magnitude > self.last_disk_scale_magnitude:
+                            self.disk_flash_direction = 1  # Scale increased (KB→MB→GB)
+                        else:
+                            self.disk_flash_direction = -1  # Scale decreased (GB→MB→KB)
                     self.last_disk_scale_magnitude = current_magnitude
                     
                     # Apply flash effect
                     if self.disk_flash_counter > 0:
-                        self.axes[1].set_facecolor('#FFEBEE' if self.disk_flash_counter % 4 < 2 else 'white')
+                        if self.disk_flash_direction == 1:
+                            # Upward change - red flash
+                            flash_color = '#FFEBEE' if self.disk_flash_counter % 4 < 2 else 'white'
+                        elif self.disk_flash_direction == -1:
+                            # Downward change - blue flash
+                            flash_color = '#E3F2FD' if self.disk_flash_counter % 4 < 2 else 'white'
+                        else:
+                            # Fallback to original behavior
+                            flash_color = '#FFEBEE' if self.disk_flash_counter % 4 < 2 else 'white'
+                        self.axes[1].set_facecolor(flash_color)
                         self.disk_flash_counter -= 1
                     else:
                         self.axes[1].set_facecolor(self.default_axes_facecolor)
+                        self.disk_flash_direction = 0  # Reset direction after flash completes
         
         # Update network plot (both upload and download) with smoothing
         upload_data = list(self.metrics_data['Network_Upload'])
@@ -729,14 +747,29 @@ class RealtimeMonitor:
                     current_magnitude = self.get_magnitude_level(max_val, BITS_PER_KB)  # Bits: Kbps=1, Mbps=2, Gbps=3
                     if current_magnitude != self.last_net_scale_magnitude and self.last_net_scale_magnitude > 0:
                         self.net_flash_counter = FLASH_DURATION  # Flash for FLASH_DURATION frames (~500ms)
+                        # Determine direction: 1=up (red), -1=down (blue)
+                        if current_magnitude > self.last_net_scale_magnitude:
+                            self.net_flash_direction = 1  # Scale increased (Kbps→Mbps→Gbps)
+                        else:
+                            self.net_flash_direction = -1  # Scale decreased (Gbps→Mbps→Kbps)
                     self.last_net_scale_magnitude = current_magnitude
                     
                     # Apply flash effect
                     if self.net_flash_counter > 0:
-                        self.axes[2].set_facecolor('#E3F2FD' if self.net_flash_counter % 4 < 2 else 'white')
+                        if self.net_flash_direction == 1:
+                            # Upward change - red flash
+                            flash_color = '#FFEBEE' if self.net_flash_counter % 4 < 2 else 'white'
+                        elif self.net_flash_direction == -1:
+                            # Downward change - blue flash
+                            flash_color = '#E3F2FD' if self.net_flash_counter % 4 < 2 else 'white'
+                        else:
+                            # Fallback to original behavior
+                            flash_color = '#E3F2FD' if self.net_flash_counter % 4 < 2 else 'white'
+                        self.axes[2].set_facecolor(flash_color)
                         self.net_flash_counter -= 1
                     else:
                         self.axes[2].set_facecolor(self.default_axes_facecolor)
+                        self.net_flash_direction = 0  # Reset direction after flash completes
         
         # Refresh layout to handle any window resizing
         self.fig.canvas.draw_idle()

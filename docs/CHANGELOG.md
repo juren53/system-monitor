@@ -1,5 +1,35 @@
 # Changelog - sysmon.py
 
+## 2025-12-05 - Enhanced Visual Scale Change Indicators & UI Improvements  [ v0.1.1 ]
+
+### Added
+- **Directional color-coded flash indicators**
+  - Red flash (`#FFEBEE`) when Y-axis scale increases (KB→MB→GB, Kbps→Mbps→Gbps)
+  - Blue flash (`#E3F2FD`) when Y-axis scale decreases (GB→MB→KB, Gbps→Mbps→Kbps)
+  - Applies to both Disk I/O and Network graphs
+  - Maintains existing flash duration (~500ms) and alternating pattern
+
+### Improved
+- **Visual feedback for scale changes**
+  - More intuitive indication of load direction
+  - Red indicates increasing activity/scale
+  - Blue indicates decreasing activity/scale
+  - Helps users quickly identify traffic patterns
+
+- **UI title sizing**
+  - Reduced main title font size from 16 to 12 points
+  - Added `TITLE_FONT_SIZE` constant for maintainability
+  - Creates more space for monitoring graphs while maintaining visual hierarchy
+  - Bold font weight preserved for title prominence
+
+### Technical Details
+- Added `disk_flash_direction` and `net_flash_direction` instance variables
+- Enhanced magnitude detection logic to track direction of change
+- Updated flash color logic with conditional color selection
+- Direction tracking resets after flash completes
+- Added `TITLE_FONT_SIZE = 12` constant in Display & UI Constants section
+- Backward compatible with existing flash behavior
+
 ## 2025-12-04 - Code Refactoring & Constants Implementation  [ v0.0.9c ]
 
 ### Added
