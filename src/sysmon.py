@@ -139,8 +139,12 @@ def _apply_qt_desktop_theme():
     # Set application icon BEFORE any windows/figures are created
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        for candidate in ('ICON_sysmon.png', 'ICON_sysmon.ico'):
-            icon_path = os.path.join(script_dir, candidate)
+        parent_dir = os.path.dirname(script_dir)
+        for candidate in ('ICON_SysMon-t.png', 'ICON_sysmon.png', 'ICON_sysmon.ico'):
+            # Check icons directory first, then script directory
+            icon_path = os.path.join(parent_dir, 'icons', candidate)
+            if not os.path.exists(icon_path):
+                icon_path = os.path.join(script_dir, candidate)
             if os.path.exists(icon_path):
                 icon = QtGui.QIcon(icon_path)
                 if not icon.isNull():
@@ -223,14 +227,18 @@ class RealtimeMonitor:
         # Set custom window icon using QPixmap for proper loading
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            icon_path = os.path.join(script_dir, 'ICON_sysmon.png')
-            if not os.path.exists(icon_path):
-                icon_path = os.path.join(script_dir, 'ICON_sysmon.ico')
-            if os.path.exists(icon_path):
-                pixmap = QtGui.QPixmap(icon_path)
-                if not pixmap.isNull():
-                    icon = QtGui.QIcon(pixmap)
-                    self.fig.canvas.manager.window.setWindowIcon(icon)
+            parent_dir = os.path.dirname(script_dir)
+            # Try new icon first from icons directory, then fallback options
+            for candidate in ('ICON_SysMon-t.png', 'ICON_sysmon.png', 'ICON_sysmon.ico'):
+                icon_path = os.path.join(parent_dir, 'icons', candidate)
+                if not os.path.exists(icon_path):
+                    icon_path = os.path.join(script_dir, candidate)
+                if os.path.exists(icon_path):
+                    pixmap = QtGui.QPixmap(icon_path)
+                    if not pixmap.isNull():
+                        icon = QtGui.QIcon(pixmap)
+                        self.fig.canvas.manager.window.setWindowIcon(icon)
+                        break
         except Exception:
             pass
         
