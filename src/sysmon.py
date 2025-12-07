@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sysmon.py  v0.1.1 2025-12-05
+# sysmon.py  v0.1.2 2025-12-07
 # CPU, Disk IO and Net IO scrolling graph
 # w drill down popups and Visual Scale Change Indicators
 
@@ -30,7 +30,7 @@ def _filter_stderr():
     All other stderr messages (Python exceptions, tracebacks, warnings, etc.)
     are passed through unchanged to the console.
     """
-    if sys.stderr.isatty():
+    if sys.stderr is not None and hasattr(sys.stderr, 'isatty') and sys.stderr.isatty():
         # Create a pipe
         read_fd, write_fd = os.pipe()
         
@@ -73,6 +73,7 @@ import argparse
 from matplotlib.ticker import FuncFormatter
 import time
 import atexit
+import sys
 
 # ============================================================================
 # SYSTEM MONITOR CONSTANTS
@@ -131,6 +132,17 @@ def get_system_metrics():
         'Network_Download': net_io.bytes_recv
     }
 
+def _get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller."""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Running in normal Python environment
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        base_path = os.path.dirname(base_path)  # Go up one level to project root
+    return os.path.join(base_path, relative_path)
+
 def _apply_qt_desktop_theme():
     """Apply Qt desktop palette to Matplotlib rcParams (dark/light aware), and set app icon early."""
     # Ensure there is a QApplication (use empty argv so Qt doesn't eat CLI args)
@@ -138,13 +150,8 @@ def _apply_qt_desktop_theme():
 
     # Set application icon BEFORE any windows/figures are created
     try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        parent_dir = os.path.dirname(script_dir)
         for candidate in ('ICON_SysMon-t.png', 'ICON_sysmon.png', 'ICON_sysmon.ico'):
-            # Check icons directory first, then script directory
-            icon_path = os.path.join(parent_dir, 'icons', candidate)
-            if not os.path.exists(icon_path):
-                icon_path = os.path.join(script_dir, candidate)
+            icon_path = _get_resource_path(os.path.join('icons', candidate))
             if os.path.exists(icon_path):
                 icon = QtGui.QIcon(icon_path)
                 if not icon.isNull():
@@ -226,13 +233,8 @@ class RealtimeMonitor:
         
         # Set custom window icon using QPixmap for proper loading
         try:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            parent_dir = os.path.dirname(script_dir)
-            # Try new icon first from icons directory, then fallback options
             for candidate in ('ICON_SysMon-t.png', 'ICON_sysmon.png', 'ICON_sysmon.ico'):
-                icon_path = os.path.join(parent_dir, 'icons', candidate)
-                if not os.path.exists(icon_path):
-                    icon_path = os.path.join(script_dir, candidate)
+                icon_path = _get_resource_path(os.path.join('icons', candidate))
                 if os.path.exists(icon_path):
                     pixmap = QtGui.QPixmap(icon_path)
                     if not pixmap.isNull():
@@ -293,8 +295,8 @@ class RealtimeMonitor:
         self.axes[-1].set_xlabel('Time (seconds)', fontsize=9, fontweight='bold')
         self.fig.tight_layout(pad=2.0)
         
-        # Add version text in lower left corner
-        self.fig.text(0.01, 0.01, 'v0.1.1 2025-12-05 15:55', fontsize=8, 
+# Add version text in lower left corner
+        self.fig.text(0.01, 0.01, 'v0.1.2 2025-12-07', fontsize=8, 
                      ha='left', va='bottom', transform=self.fig.transFigure)
         
         # Enable auto-adjust on resize
@@ -521,13 +523,21 @@ class RealtimeMonitor:
             return 3
     
     def moving_average(self, data, window_size):
-        """Calculate moving average for smoothing using same-length output"""
+        """Calculate moving average for smoothing without edge effects"""
         if len(data) < window_size:
             return np.array(data)  # Not enough data to smooth
-        # Use mode='same' to keep same length, then trim edges to avoid edge effects
-        # This prevents data from disappearing during startup
-        smoothed = np.convolve(data, np.ones(window_size) / window_size, mode='same')
-        return smoothed
+        
+        result = np.zeros_like(data, dtype=float)
+        
+        for i in range(len(data)):
+            if i < window_size - 1:
+                # For early points, use available data points
+                result[i] = np.mean(data[:i+1])
+            else:
+                # For full window, use standard moving average
+                result[i] = np.mean(data[i-window_size+1:i+1])
+        
+        return result
     
     def filter_data_by_time_window(self, time_data, value_data, current_time):
         """Filter data to only include points within the current time window."""

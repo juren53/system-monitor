@@ -1,5 +1,20 @@
 # Changelog - sysmon.py
 
+## 2025-12-07 - Fixed Graph Representation Issue  [ v0.1.2 ]
+
+### Fixed
+- **Moving average edge effects**
+  - Resolved issue where most recent data points always pointed downward regardless of actual activity
+  - Replaced `np.convolve(mode='same')` with proper edge-aware moving average implementation
+  - Eliminates zero-padding artifacts that caused artificial downward trends
+  - Now accurately represents real system activity patterns
+
+### Improved
+- **Graph accuracy**
+  - Most recent data points now show correct values
+  - Real-time monitoring provides accurate visual feedback
+  - Maintains smooth scrolling without edge effects
+
 ## 2025-12-05 - Enhanced Visual Scale Change Indicators & UI Improvements  [ v0.1.1 ]
 
 ### Added
