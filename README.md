@@ -1,22 +1,30 @@
 # SysMon - Real-time System Monitor
 
+**Version:** v0.2.0 (Production Release)  
+**Release Date:** 2025-12-21
+
 ## Description
-Comprehensive system monitoring application with real-time graphs for CPU, Disk I/O, and Network activity.
+Comprehensive system monitoring application with real-time graphs for CPU, Disk I/O, and Network activity. Built with PyQtGraph for high-performance real-time visualization.
 
 ## Features
-- Real-time monitoring with smooth scrolling graphs
-- Interactive controls (time window adjustment, process drill-down)
-- Cross-platform compatibility (Linux/Windows)
-- Desktop theme inheritance
-- Process resource analysis
-- Window geometry persistence
+- **Real-time monitoring** with smooth scrolling graphs (75-150x faster than matplotlib)
+- **Professional menu system** with File, Edit, View, Config, Help menus
+- **Window transparency** for see-through mode (10%-100% opacity control)
+- **Always On Top** toggle for floating desktop monitor
+- **XDG compliance** for cross-platform configuration management
+- **Cross-platform compatibility** (Windows, Linux, macOS)
+- **Automatic system theme** detection (light/dark mode)
+- **Process resource analysis** with drill-down capability
+- **Window geometry persistence** with XDG-compliant configuration
+- **Keyboard shortcuts** for power users (Ctrl+S, Ctrl+C, F11, etc.)
 
 ## Installation
 ### Requirements
 - Python 3.7+
-- matplotlib
-- psutil
 - PyQt5
+- PyQtGraph
+- psutil
+- (matplotlib no longer required - replaced with PyQtGraph)
 
 ### Install Dependencies
 ```bash

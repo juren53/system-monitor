@@ -34,6 +34,8 @@
 - **XDG Compliance:** Professional cross-platform config management
 - **Automatic Themes:** System light/dark theme detection and adaptation
 - **Enhanced Persistence:** Window geometry + user preferences saved separately
+- **Version Labeling:** Version and release date displayed in UI lower right corner
+- **Updated Documentation:** All files updated with v0.2.0 and 2025-12-21 release info
 - **Keyboard Shortcuts:** Professional shortcuts (Ctrl+S, Ctrl+C, F11, etc.)
 
 ### Configuration Structure

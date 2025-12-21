@@ -1,6 +1,9 @@
 """
-PyQtGraph-based System Monitor
-Demonstrates real-time CPU, Disk I/O, and Network monitoring with smooth performance
+SysMon - PyQtGraph-based System Monitor v0.2.0
+Release: 2025-12-21
+
+Real-time CPU, Disk I/O, and Network monitoring with smooth performance
+Professional system monitoring with XDG compliance and advanced features
 """
 
 import sys
@@ -9,6 +12,11 @@ import os
 import atexit
 import platform
 from collections import deque
+
+# Version Information
+VERSION = "0.2.0"
+RELEASE_DATE = "2025-12-21"
+FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
                              QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
@@ -229,6 +237,26 @@ class SystemMonitor(QMainWindow):
         self.net_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_top_processes('network') if evt.double() else None)
         main_layout.addWidget(self.net_plot)
+        
+        # Version label in lower right corner
+        version_layout = QHBoxLayout()
+        version_layout.addStretch()
+        
+        # Create version label with release info
+        version_text = f"SysMon {VERSION}\nReleased: {RELEASE_DATE}"
+        self.version_label = QLabel(version_text)
+        self.version_label.setStyleSheet("""
+            QLabel {
+                color: #808080;
+                font-size: 9px;
+                font-style: italic;
+                padding: 2px;
+            }
+        """)
+        self.version_label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+        version_layout.addWidget(self.version_label)
+        
+        main_layout.addLayout(version_layout)
         
         # Apply system theme to plots
         self.apply_system_theme_to_plots()
@@ -942,13 +970,19 @@ class SystemMonitor(QMainWindow):
         • CPU, Disk I/O, and Network monitoring<br>
         • Real-time graphs with smooth performance<br>
         • Process drill-down information<br>
+        • Window transparency and always-on-top<br>
+        • XDG-compliant configuration<br>
+        • Professional menu system<br>
+        • Automatic system theme detection<br>
         • Customizable time windows and colors<br><br>
-        <b>Version:</b> Prototype v0.1.0<br>
+        <b>Version:</b> {FULL_VERSION} (Production Release)<br>
+        <b>Release Date:</b> {RELEASE_DATE}<br>
         <b>Author:</b> System Monitor Project<br><br>
         <b>Libraries:</b><br>
         • PyQt5 - GUI Framework<br>
         • PyQtGraph - High-performance plotting<br>
         • psutil - System information<br>
+        • Platform detection - Cross-platform support<br>
         """
         
         QMessageBox.about(self, "About SysMon", about_text)
