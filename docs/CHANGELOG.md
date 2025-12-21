@@ -1,5 +1,40 @@
 # Changelog - sysmon.py
 
+## 2025-12-21 - Cross-Platform Line Ending Management  [ v0.2.1 ]
+
+### 🔧 **Infrastructure Improvement**
+- **Added .gitattributes:** Cross-platform line ending configuration
+- **Eliminated CRLF Warnings:** No more "CRLF will be replaced by LF" messages
+- **Following HSTL Project Pattern:** Professional cross-platform development practices
+- **Comprehensive Documentation:** Complete guide in `docs/gitattributes-explanation.md`
+
+### 🌐 **Cross-Platform Benefits**
+- **Windows Developers:** Automatic CRLF conversion on checkout
+- **Linux/macOS Developers:** Files maintain standard LF endings
+- **Team Collaboration:** Repository consistency across all platforms
+- **No More Conflicts:** Line ending issues eliminated
+
+### 📁 **File Type Handling**
+- **Text Files:** Auto-normalized (*.py, *.md, *.txt, *.json, *.spec, *.bat)
+- **Binary Files:** Protected from text processing (*.png, *.ico, *.exe, *.zip)
+- **Shell Scripts:** LF-only endings regardless of platform (*.sh eol=lf)
+- **Python Binaries:** Explicit binary declarations (*.pyc, *.pyo, *.pyd)
+
+### 📚 **Documentation Added**
+- **Complete Guide:** `docs/gitattributes-explanation.md` with implementation details
+- **Migration Process:** How to handle existing files
+- **Best Practices:** Git-recommended configuration
+- **Usage Examples:** For adding new file types
+- **Reference Links:** Documentation and inspiration sources
+
+### Technical Details
+- **Repository Storage:** All text files stored with LF endings
+- **Windows Checkout:** Automatic CRLF conversion for native text editors
+- **Platform Detection:** Appropriate line endings per operating system
+- **Binary Protection:** Prevents corruption of image, executable, and library files
+
+---
+
 ## 2025-12-21 - Branch Promotion & Release Ready  [ v0.2.0 ]
 
 ### 🎯 **MAJOR MILESTONE: Prototype Promoted to Main**
@@ -37,6 +72,7 @@
 - **Version Labeling:** Version and release date displayed in UI lower right corner
 - **Updated Documentation:** All files updated with v0.2.0 and 2025-12-21 release info
 - **Keyboard Shortcuts:** Professional shortcuts (Ctrl+S, Ctrl+C, F11, etc.)
+- **Line Ending Management:** Added .gitattributes for cross-platform compatibility
 - **Line Ending Management:** Added .gitattributes for cross-platform compatibility
 
 ### Configuration Structure
