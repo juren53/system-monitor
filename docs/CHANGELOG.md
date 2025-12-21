@@ -1,5 +1,17 @@
 # Changelog - sysmon.py
 
+## 2025-12-21 - User Accessibility & Documentation  [ v0.2.2 ]
+
+### 📚 **User Documentation Access**
+- **ChangeLog Menu Item:** Added Help → ChangeLog for development visibility
+- **Interactive Dialog:** 800x600 window with scrollable changelog content
+- **Monospace Font:** Professional formatting for easy reading
+- **Error Handling:** Graceful fallback if changelog file unavailable
+- **UTF-8 Support:** Proper handling of emoji characters in documentation
+- **Development Transparency:** Users can see complete feature evolution
+
+---
+
 ## 2025-12-21 - Cross-Platform Line Ending Management  [ v0.2.1 ]
 
 ### 🔧 **Infrastructure Improvement**

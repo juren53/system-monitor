@@ -14,7 +14,7 @@ import platform
 from collections import deque
 
 # Version Information
-VERSION = "0.2.0"
+VERSION = "0.2.2"
 RELEASE_DATE = "2025-12-21"
 FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
