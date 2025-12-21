@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QInputDialog, QColorDialog, QCheckBox, QSpinBox,
                              QGroupBox, QFormLayout, QDialogButtonBox)
 from PyQt5.QtCore import QTimer, Qt, QSize
-from PyQt5.QtGui import QKeySequence, QIcon
+from PyQt5.QtGui import QKeySequence, QIcon, QPalette
 import pyqtgraph as pg
 import psutil
 import time
@@ -63,6 +63,30 @@ class SystemMonitor(QMainWindow):
         self.setup_menu_bar()
         self.setup_timer()
         
+    def setup_pyqtgraph_theme(self):
+        """Configure PyQtGraph to match system theme"""
+        # Get system palette
+        palette = self.palette()
+        bg_color = palette.color(QPalette.Window)
+        bg_brightness = sum([bg_color.red(), bg_color.green(), bg_color.blue()]) / 3
+        is_dark_theme = bg_brightness < 128
+        
+        # Apply theme to PyQtGraph global config
+        if is_dark_theme:
+            pg.setConfigOptions(
+                background=(20, 20, 20),  # Dark background
+                foreground=(200, 200, 200),  # Light text
+                antialias=True,
+                enableExperimental=True
+            )
+        else:
+            pg.setConfigOptions(
+                background=(240, 240, 240),  # Light background
+                foreground=(40, 40, 40),  # Dark text
+                antialias=True,
+                enableExperimental=True
+            )
+        
     def setup_ui(self):
         """Setup the user interface"""
         central_widget = QWidget()
@@ -90,7 +114,8 @@ class SystemMonitor(QMainWindow):
         
         main_layout.addLayout(control_layout)
         
-        # Setup plots
+        # Setup plots with system theme
+        self.setup_pyqtgraph_theme()
         pg.setConfigOptions(antialias=True)
         
         # CPU Plot
@@ -127,6 +152,74 @@ class SystemMonitor(QMainWindow):
         self.net_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_top_processes('network') if evt.double() else None)
         main_layout.addWidget(self.net_plot)
+        
+        # Apply system theme to plots
+        self.apply_system_theme_to_plots()
+        
+    def apply_system_theme_to_plots(self):
+        """Apply system theme colors to plots"""
+        # Get system palette
+        palette = self.palette()
+        bg_color = palette.color(QPalette.Window)
+        bg_brightness = sum([bg_color.red(), bg_color.green(), bg_color.blue()]) / 3
+        is_dark_theme = bg_brightness < 128
+        
+        # Set theme colors
+        if is_dark_theme:
+            text_color = '#c8c8c8'
+            grid_color = '#404040'
+            axis_color = '#808080'
+            
+            # Dark theme colors for better contrast
+            cpu_color = '#4CAF50'
+            disk_read_color = '#FF9800'
+            disk_write_color = '#2196F3'
+            net_sent_color = '#E91E63'
+            net_recv_color = '#00BCD4'
+            
+            # Set plot backgrounds
+            self.cpu_plot.setBackground((20, 20, 20))
+            self.disk_plot.setBackground((20, 20, 20))
+            self.net_plot.setBackground((20, 20, 20))
+        else:
+            text_color = '#282828'
+            grid_color = '#d0d0d0'
+            axis_color = '#808080'
+            
+            # Light theme colors
+            cpu_color = '#00ff00'
+            disk_read_color = '#ff6b6b'
+            disk_write_color = '#4ecdc4'
+            net_sent_color = '#ff9ff3'
+            net_recv_color = '#54a0ff'
+            
+            # Set plot backgrounds
+            self.cpu_plot.setBackground((240, 240, 240))
+            self.disk_plot.setBackground((240, 240, 240))
+            self.net_plot.setBackground((240, 240, 240))
+        
+        # Apply colors to CPU plot
+        self.cpu_curve.setPen(pg.mkPen(color=cpu_color, width=2))
+        self.cpu_plot.getAxis('left').setPen(axis_color)
+        self.cpu_plot.getAxis('bottom').setPen(axis_color)
+        self.cpu_plot.getAxis('left').setTextPen(text_color)
+        self.cpu_plot.getAxis('bottom').setTextPen(text_color)
+        
+        # Apply colors to Disk plot
+        self.disk_read_curve.setPen(pg.mkPen(color=disk_read_color, width=2))
+        self.disk_write_curve.setPen(pg.mkPen(color=disk_write_color, width=2))
+        self.disk_plot.getAxis('left').setPen(axis_color)
+        self.disk_plot.getAxis('bottom').setPen(axis_color)
+        self.disk_plot.getAxis('left').setTextPen(text_color)
+        self.disk_plot.getAxis('bottom').setTextPen(text_color)
+        
+        # Apply colors to Network plot
+        self.net_sent_curve.setPen(pg.mkPen(color=net_sent_color, width=2))
+        self.net_recv_curve.setPen(pg.mkPen(color=net_recv_color, width=2))
+        self.net_plot.getAxis('left').setPen(axis_color)
+        self.net_plot.getAxis('bottom').setPen(axis_color)
+        self.net_plot.getAxis('left').setTextPen(text_color)
+        self.net_plot.getAxis('bottom').setTextPen(text_color)
         
     def setup_menu_bar(self):
         """Setup the application menu bar"""
