@@ -4,6 +4,9 @@ Demonstrates real-time CPU, Disk I/O, and Network monitoring with smooth perform
 """
 
 import sys
+import json
+import os
+import atexit
 from collections import deque
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
@@ -39,7 +42,16 @@ class SystemMonitor(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SysMon - PyQtGraph Edition")
-        self.resize(1000, 700)
+        
+        # Configuration file location
+        self.config_file = os.path.join(os.path.expanduser('~'), '.sysmon_config.json')
+        
+        # Load saved window geometry
+        self.load_window_geometry()
+        
+        # Set default size if no saved geometry exists
+        if not hasattr(self, '_initial_geometry_loaded'):
+            self.resize(1000, 700)
         
         # Configuration
         self.time_window = 20  # seconds
@@ -62,6 +74,9 @@ class SystemMonitor(QMainWindow):
         self.setup_ui()
         self.setup_menu_bar()
         self.setup_timer()
+        
+        # Register save function to be called on application exit
+        atexit.register(self.save_window_geometry)
         
     def setup_pyqtgraph_theme(self):
         """Configure PyQtGraph to match system theme"""
@@ -469,6 +484,54 @@ class SystemMonitor(QMainWindow):
         except Exception as e:
             print(f"Error getting process info: {e}")
     
+    # Window Geometry Methods
+    def load_window_geometry(self):
+        """Load window size and position from config file"""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r') as f:
+                    config = json.load(f)
+                    
+                if 'window_size' in config:
+                    width, height = config['window_size']
+                    x = config.get('x', 100)
+                    y = config.get('y', 100)
+                    self.setGeometry(x, y, width, height)
+                    self._initial_geometry_loaded = True
+        except Exception as e:
+            # Silently ignore errors and use default geometry
+            pass
+    
+    def save_window_geometry(self):
+        """Save window size and position to config file"""
+        try:
+            geometry = self.geometry()
+            config = {
+                'x': geometry.x(),
+                'y': geometry.y(),
+                'window_size': [geometry.width(), geometry.height()],
+                'time_window': self.time_window,
+                'update_interval': self.update_interval
+            }
+            
+            # Load existing config and merge if it exists
+            existing_config = {}
+            if os.path.exists(self.config_file):
+                try:
+                    with open(self.config_file, 'r') as f:
+                        existing_config = json.load(f)
+                except:
+                    pass
+            
+            # Merge new settings with existing ones
+            existing_config.update(config)
+            
+            with open(self.config_file, 'w') as f:
+                json.dump(existing_config, f, indent=2)
+        except Exception as e:
+            # Silently ignore errors
+            pass
+    
     # File Menu Methods
     def save_data(self):
         """Save monitoring data to CSV file"""
@@ -554,7 +617,15 @@ class SystemMonitor(QMainWindow):
             self.max_points = int((self.time_window * 1000) / self.update_interval)
             self.timer.setInterval(self.update_interval)
             self.update_time_window()
-            QMessageBox.information(self, "Success", "Settings reset to defaults")
+            
+            # Remove config file to reset window geometry
+            try:
+                if os.path.exists(self.config_file):
+                    os.remove(self.config_file)
+            except:
+                pass
+            
+            QMessageBox.information(self, "Success", "Settings reset to defaults\n\nConfig file removed - window will reset to default size and position on next restart.")
     
     # View Menu Methods
     def toggle_cpu_plot(self):
