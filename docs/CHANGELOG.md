@@ -78,8 +78,11 @@
   - Saves window size and position to `~/.sysmon_config.json`
   - Restores window geometry on application startup
   - Stores time window and update interval preferences
-  - Automatic save on application exit using `atexit`
+  - Automatic save on application exit using Qt closeEvent
+  - Periodic save timer as backup (every 30 seconds)
   - Enhanced reset settings to clear config file
+  - Debug output to verify save/load operations
+  - Fixed Qt event handling for reliable geometry persistence
 
 ### Benefits
 - **Speed:** Up to 150x faster plotting performance
