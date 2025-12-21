@@ -37,6 +37,7 @@
 - **Version Labeling:** Version and release date displayed in UI lower right corner
 - **Updated Documentation:** All files updated with v0.2.0 and 2025-12-21 release info
 - **Keyboard Shortcuts:** Professional shortcuts (Ctrl+S, Ctrl+C, F11, etc.)
+- **Line Ending Management:** Added .gitattributes for cross-platform compatibility
 
 ### Configuration Structure
 - **Windows:** `%APPDATA%\sysmon\config.json` + `preferences.json`
