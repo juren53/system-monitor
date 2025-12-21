@@ -434,6 +434,13 @@ class SystemMonitor(QMainWindow):
         # Help Menu
         help_menu = menubar.addMenu('&Help')
         
+        changelog_action = QAction('&ChangeLog', self)
+        changelog_action.setStatusTip('View SysMon development history and changes')
+        changelog_action.triggered.connect(self.show_changelog)
+        help_menu.addAction(changelog_action)
+        
+        help_menu.addSeparator()
+        
         about_action = QAction('&About', self)
         about_action.setStatusTip('About SysMon')
         about_action.triggered.connect(self.show_about)
@@ -961,6 +968,61 @@ class SystemMonitor(QMainWindow):
         self.save_preferences()
     
     # Help Menu Methods
+    def show_changelog(self):
+        """Show changelog dialog"""
+        # Try to read the changelog file
+        changelog_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'CHANGELOG.md')
+        
+        try:
+            with open(changelog_path, 'r', encoding='utf-8', errors='replace') as f:
+                changelog_content = f.read()
+        except Exception as e:
+            changelog_content = f"""# ChangeLog
+
+Unable to load CHANGELOG.md file.
+
+Error: {str(e)}
+
+Please check the docs/CHANGELOG.md file in the SysMon repository."""
+        
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("SysMon ChangeLog")
+        dialog.setModal(True)
+        dialog.resize(800, 600)
+        
+        layout = QVBoxLayout()
+        
+        # Create text area with changelog content
+        text_area = QTextEdit()
+        text_area.setReadOnly(True)
+        text_area.setPlainText(changelog_content)
+        text_area.setStyleSheet("""
+            QTextEdit {
+                font-family: 'Courier New', monospace;
+                font-size: 10px;
+                background-color: #f8f9fa;
+                color: #212529;
+                border: 1px solid #dee2e6;
+                padding: 8px;
+            }
+        """)
+        layout.addWidget(text_area)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(close_button)
+        
+        layout.addLayout(button_layout)
+        dialog.setLayout(layout)
+        
+        # Show dialog
+        dialog.exec_()
+    
     def show_about(self):
         """Show about dialog"""
         about_text = """
