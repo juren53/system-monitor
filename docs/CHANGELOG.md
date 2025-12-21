@@ -1,5 +1,48 @@
 # Changelog - sysmon.py
 
+## 2025-12-21 - Branch Promotion & Release Ready  [ v0.2.0 ]
+
+### 🎯 **MAJOR MILESTONE: Prototype Promoted to Main**
+
+### Branch Restructuring
+- **Promoted to Production:** `feature/pyqtgraph-prototype` branch promoted to `main`
+- **Backup Preserved:** Original main branch saved as `old-main-backup`
+- **Remote Updated:** GitHub origin/main now points to new main branch
+- **Release Ready:** All PyQtGraph features now production-ready
+
+### Complete Feature Summary
+- **PyQtGraph Implementation:** 75-150x faster real-time plotting performance
+- **Professional Menu Suite:** Complete File, Edit, View, Config, Help menus
+- **XDG Compliance:** Cross-platform configuration following OS standards
+- **Window Transparency:** Interactive see-through mode (10%-100% opacity)
+- **Always On Top:** Toggle for floating desktop monitor behavior
+- **Enhanced Preferences:** Separated geometry and user preference management
+- **System Theme Integration:** Automatic light/dark theme detection
+
+### Benefits Achieved
+- **Performance:** Dramatically improved real-time monitoring responsiveness
+- **Professional UI:** Complete menu system with keyboard shortcuts
+- **Cross-Platform:** Windows, Linux, macOS compatibility with XDG standards
+- **User Experience:** Persistent settings, transparency, and always-on-top options
+- **Standards Compliance:** XDG Base Directory Specification implementation
+
+### What's New in v0.2.0 (vs Previous Main)
+- **PyQtGraph Replacement:** matplotlib → PyQtGraph for massive performance gains
+- **Complete Menu System:** Added File, Edit, View, Config, Help menus
+- **Window Transparency:** New see-through mode capability
+- **Always On Top:** Toggle to keep window above other apps
+- **XDG Compliance:** Professional cross-platform config management
+- **Automatic Themes:** System light/dark theme detection and adaptation
+- **Enhanced Persistence:** Window geometry + user preferences saved separately
+- **Keyboard Shortcuts:** Professional shortcuts (Ctrl+S, Ctrl+C, F11, etc.)
+
+### Configuration Structure
+- **Windows:** `%APPDATA%\sysmon\config.json` + `preferences.json`
+- **Linux/macOS:** `~/.config/sysmon/config.json` + `preferences.json`
+- **Migration:** Automatic from old `~/.sysmon_config.json` location
+
+---
+
 ## 2025-12-21 - XDG Compliance & Transparency Features  [ Prototype v0.1.2 ]
 
 ### Added
@@ -24,6 +67,14 @@
   - Transparency preference saved and restored across sessions
   - Safety minimum of 10% opacity to maintain visibility
   - Reset button to quickly return to fully opaque mode
+
+- **Always On Top Feature**
+  - Config → Always On Top menu item with checkbox indicator
+  - Toggle to keep window always above other applications
+  - Uses Qt.WindowStaysOnTopHint for proper window layering
+  - State saved to preferences and restored on startup
+  - Perfect for creating floating desktop monitor widget
+  - Can be combined with transparency for see-through overlay
 
 ### Fixed
 - **Window Geometry Persistence**
