@@ -1,5 +1,92 @@
 # Changelog - sysmon.py
 
+## 2025-12-21 - XDG Compliance & Transparency Features  [ Prototype v0.1.2 ]
+
+### Added
+- **XDG Base Directory Specification Compliance**
+  - Cross-platform configuration directory management
+  - Windows: Uses `%APPDATA%\sysmon` following Windows conventions
+  - Linux/macOS: Uses `~/.config/sysmon` following XDG standard
+  - Automatic migration from old `~/.sysmon_config.json` location
+  - Graceful fallback handling for missing or corrupted configs
+
+- **Separated Configuration Structure**
+  - Main config: Window geometry and position (config.json)
+  - User preferences: Update interval, time window, transparency (preferences.json)
+  - Proper file organization and cleaner configuration management
+  - Backwards compatibility with existing configuration files
+
+### Added
+- **Window Transparency Feature**
+  - Config → Transparency... menu item for see-through mode
+  - Interactive slider dialog (10% - 100% opacity range)
+  - Real-time preview while adjusting transparency
+  - Transparency preference saved and restored across sessions
+  - Safety minimum of 10% opacity to maintain visibility
+  - Reset button to quickly return to fully opaque mode
+
+### Fixed
+- **Window Geometry Persistence**
+  - Fixed geometry save/load format mismatch
+  - Now uses proper Qt serialization (QByteArray) for reliable restoration
+  - Maintains backwards compatibility with old x,y,window_size format
+  - Window position, size, and state properly restored on startup
+  - Enhanced error handling for corrupted geometry data
+
+### Improved
+- **Configuration Management**
+  - XDG-compliant file locations following OS conventions
+  - Automatic config migration with user notification
+  - Better error handling for missing/corrupted config files
+  - Clean separation of geometry vs user preferences
+  - Debug output for troubleshooting configuration issues
+
+### Technical Details
+- **New XDG Functions:**
+  - `get_xdg_config_dir()` - Platform-specific config directory
+  - `migrate_old_config()` - Seamless migration from old config location
+  - `ensure_config_directory()` - Creates config directories if needed
+  - `get_config_file_path()` / `get_preferences_file_path()` - Path utilities
+
+- **Transparency Implementation:**
+  - `set_window_transparency()` - Core opacity setting with clamping
+  - `change_transparency()` - Interactive slider dialog with preview
+  - Integrated with preferences system for persistence
+  - Proper state management with cancel/restore functionality
+
+- **Configuration File Structure:**
+  ```json
+  // config.json - Window geometry
+  {
+    "window_geometry": {
+      "geometry": "<QByteArray data>",
+      "state": "<QByteArray data>"
+    }
+  }
+  
+  // preferences.json - User settings  
+  {
+    "update_interval": 200,
+    "time_window": 30,
+    "transparency": 1.0
+  }
+  ```
+
+### Platform Support
+- **Windows:** `%APPDATA%\sysmon\`
+- **Linux:** `~/.config/sysmon/`
+- **macOS:** `~/.config/sysmon/` (XDG standard)
+- **Migration:** Automatic from old `~/.sysmon_config.json`
+
+### Benefits
+- **Standards Compliance:** Follows XDG Base Directory Specification
+- **Cross-Platform:** Consistent behavior across Windows, Linux, macOS
+- **User Experience:** Window transparency for improved desktop integration
+- **Configuration:** Reliable save/restore of window position and preferences
+- **Professional:** Industry-standard configuration management
+
+---
+
 ## 2025-12-21 - PyQtGraph Prototype Branch  [ Prototype v0.1.0 ]
 
 ### ⚠️ **MAJOR ARCHITECTURE CHANGE**

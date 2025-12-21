@@ -7,6 +7,7 @@ import sys
 import json
 import os
 import atexit
+import platform
 from collections import deque
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
@@ -18,6 +19,52 @@ from PyQt5.QtGui import QKeySequence, QIcon, QPalette
 import pyqtgraph as pg
 import psutil
 import time
+
+def get_xdg_config_dir():
+    """Get XDG-compliant configuration directory"""
+    if platform.system() == "Windows":
+        # Windows: Use AppData instead of XDG
+        return os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'sysmon')
+    else:
+        # Linux/macOS: Use XDG standard
+        xdg_config = os.environ.get('XDG_CONFIG_HOME')
+        if xdg_config:
+            return os.path.join(xdg_config, 'sysmon')
+        else:
+            return os.path.join(os.path.expanduser('~'), '.config', 'sysmon')
+
+def ensure_config_directory(config_dir):
+    """Ensure configuration directory exists"""
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir, exist_ok=True)
+
+def migrate_old_config(old_config_file, new_config_dir):
+    """Migrate old config file to new XDG location"""
+    if os.path.exists(old_config_file) and not os.path.exists(os.path.join(new_config_dir, 'config.json')):
+        try:
+            # Read old config
+            with open(old_config_file, 'r') as f:
+                old_data = json.load(f)
+            
+            # Write to new location
+            with open(os.path.join(new_config_dir, 'config.json'), 'w') as f:
+                json.dump(old_data, f, indent=2)
+            
+            # Remove old file
+            os.remove(old_config_file)
+            return True
+        except Exception as e:
+            print(f"Config migration failed: {e}")
+            return False
+    return False
+
+def get_config_file_path(config_dir):
+    """Get main config file path"""
+    return os.path.join(config_dir, 'config.json')
+
+def get_preferences_file_path(config_dir):
+    """Get preferences file path"""
+    return os.path.join(config_dir, 'preferences.json')
 
 class ProcessInfoDialog(QDialog):
     """Dialog showing top processes for a metric"""
@@ -43,19 +90,29 @@ class SystemMonitor(QMainWindow):
         super().__init__()
         self.setWindowTitle("SysMon - PyQtGraph Edition")
         
-        # Configuration file location
-        self.config_file = os.path.join(os.path.expanduser('~'), '.sysmon_config.json')
+        # XDG-compliant configuration directory
+        self.config_dir = get_xdg_config_dir()
+        ensure_config_directory(self.config_dir)
         
-        # Load saved window geometry
-        self.load_window_geometry()
+        # Migrate old config if exists
+        old_config_file = os.path.join(os.path.expanduser('~'), '.sysmon_config.json')
+        migration_success = migrate_old_config(old_config_file, self.config_dir)
+        if migration_success:
+            print("Migrated configuration to XDG-compliant location")
+        
+        # Configuration file paths
+        self.config_file = get_config_file_path(self.config_dir)
+        self.preferences_file = get_preferences_file_path(self.config_dir)
         
         # Set default size if no saved geometry exists
         if not hasattr(self, '_initial_geometry_loaded'):
             self.resize(1000, 700)
         
-        # Configuration
+        # Configuration defaults (will be overridden by loaded preferences)
         self.time_window = 20  # seconds
         self.update_interval = 200  # ms
+        self.transparency = 1.0  # 1.0 = opaque, 0.0 = fully transparent
+        self.always_on_top = False  # Window always on top setting
         self.max_points = int((self.time_window * 1000) / self.update_interval)
         
         # Data storage
@@ -74,6 +131,9 @@ class SystemMonitor(QMainWindow):
         self.setup_ui()
         self.setup_menu_bar()
         self.setup_timer()
+        
+        # Load preferences after timer is created
+        self.load_window_geometry()
         
         # Add periodic save timer as backup
         self.save_timer = QTimer()
@@ -331,6 +391,18 @@ class SystemMonitor(QMainWindow):
         graph_colors_action.triggered.connect(self.customize_graph_colors)
         config_menu.addAction(graph_colors_action)
         
+        config_menu.addSeparator()
+        
+        transparency_action = QAction('&Transparency...', self)
+        transparency_action.setStatusTip('Set window transparency for see-through mode')
+        transparency_action.triggered.connect(self.change_transparency)
+        config_menu.addAction(transparency_action)
+        
+        self.always_on_top_action = QAction('&Always On Top', self, checkable=True)
+        self.always_on_top_action.setStatusTip('Keep window always on top of other windows')
+        self.always_on_top_action.triggered.connect(self.toggle_always_on_top)
+        config_menu.addAction(self.always_on_top_action)
+        
         # Help Menu
         help_menu = menubar.addMenu('&Help')
         
@@ -497,33 +569,65 @@ class SystemMonitor(QMainWindow):
         event.accept()
     
     def load_window_geometry(self):
-        """Load window size and position from config file"""
+        """Load saved window geometry and preferences"""
         try:
+            # Load main config (window geometry, etc.)
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r') as f:
                     config = json.load(f)
+                    geometry = config.get('window_geometry', {})
+                    if geometry:
+                        # Convert back to QByteArray format
+                        geometry_data = geometry.get('geometry', '')
+                        state_data = geometry.get('state', '')
+                        
+                        if geometry_data:
+                            from PyQt5.QtCore import QByteArray
+                            geo_bytes = QByteArray(geometry_data.encode('latin1'))
+                            state_bytes = QByteArray(state_data.encode('latin1'))
+                            
+                            self.restoreGeometry(geo_bytes)
+                            self.restoreState(state_bytes)
+                        else:
+                            # Backwards compatibility: handle old x,y,window_size format
+                            x = config.get('x')
+                            y = config.get('y') 
+                            window_size = config.get('window_size')
+                            if x is not None and y is not None and window_size:
+                                self.move(x, y)
+                                self.resize(window_size[0], window_size[1])
+            
+            # Load user preferences
+            if os.path.exists(self.preferences_file):
+                with open(self.preferences_file, 'r') as f:
+                    prefs = json.load(f)
+                    self.update_interval = prefs.get('update_interval', 200)
+                    self.time_window = prefs.get('time_window', 30)
+                    self.transparency = prefs.get('transparency', 1.0)
+                    self.always_on_top = prefs.get('always_on_top', False)
                     
-                if 'window_size' in config:
-                    width, height = config['window_size']
-                    x = config.get('x', 100)
-                    y = config.get('y', 100)
-                    self.setGeometry(x, y, width, height)
-                    self._initial_geometry_loaded = True
-                    print(f"Restored window geometry: {width}x{height} at ({x}, {y})")  # Debug output
+                    # Apply loaded preferences
+                    if hasattr(self, 'timer'):
+                        self.timer.setInterval(self.update_interval)
+                    self.max_points = int((self.time_window * 1000) / self.update_interval)
+                    self.set_window_transparency(self.transparency)
+                    self.set_always_on_top(self.always_on_top)
+                    self.always_on_top_action.setChecked(self.always_on_top)
+                    
         except Exception as e:
-            # Silently ignore errors and use default geometry
-            pass
+            print(f"Failed to load configuration: {e}")
     
     def save_window_geometry(self):
-        """Save window size and position to config file"""
+        """Save window geometry and preferences"""
         try:
-            geometry = self.geometry()
+            # Use Qt's proper geometry serialization
+            geometry_data = {
+                'geometry': self.saveGeometry().data().decode('latin1'),
+                'state': self.saveState().data().decode('latin1')
+            }
+            
             config = {
-                'x': geometry.x(),
-                'y': geometry.y(),
-                'window_size': [geometry.width(), geometry.height()],
-                'time_window': self.time_window,
-                'update_interval': self.update_interval
+                'window_geometry': geometry_data
             }
             
             # Load existing config and merge if it exists
@@ -538,11 +642,29 @@ class SystemMonitor(QMainWindow):
             # Merge new settings with existing ones
             existing_config.update(config)
             
+            # Save main config (window geometry, etc.)
             with open(self.config_file, 'w') as f:
                 json.dump(existing_config, f, indent=2)
-                print(f"Saved window geometry to: {self.config_file}")  # Debug output
+                print(f"Saved configuration to: {self.config_file}")  # Debug output
         except Exception as e:
-            print(f"Failed to save window geometry: {e}")  # Debug output
+            print(f"Failed to save configuration: {e}")  # Debug output
+    
+    def save_preferences(self):
+        """Save user preferences to separate preferences file"""
+        try:
+            preferences = {
+                'update_interval': self.update_interval,
+                'time_window': self.time_window,
+                'transparency': self.transparency,
+                'always_on_top': self.always_on_top
+            }
+            
+            with open(self.preferences_file, 'w') as f:
+                json.dump(preferences, f, indent=2)
+                
+            print(f"Saved preferences to: {self.preferences_file}")
+        except Exception as e:
+            print(f"Failed to save preferences: {e}")
     
     # File Menu Methods
     def save_data(self):
@@ -626,14 +748,21 @@ class SystemMonitor(QMainWindow):
         if reply == QMessageBox.Yes:
             self.time_window = 20
             self.update_interval = 200
+            self.transparency = 1.0
+            self.always_on_top = False
             self.max_points = int((self.time_window * 1000) / self.update_interval)
             self.timer.setInterval(self.update_interval)
             self.update_time_window()
+            self.set_window_transparency(self.transparency)
+            self.set_always_on_top(self.always_on_top)
+            self.always_on_top_action.setChecked(self.always_on_top)
             
             # Remove config file to reset window geometry
             try:
                 if os.path.exists(self.config_file):
                     os.remove(self.config_file)
+                if os.path.exists(self.preferences_file):
+                    os.remove(self.preferences_file)
             except:
                 pass
             
@@ -671,6 +800,7 @@ class SystemMonitor(QMainWindow):
             self.timer.setInterval(interval)
             self.max_points = int((self.time_window * 1000) / self.update_interval)
             self.update_time_window()
+            self.save_preferences()
     
     def change_time_window_settings(self):
         """Configure time window settings"""
@@ -681,6 +811,7 @@ class SystemMonitor(QMainWindow):
         if ok:
             self.time_window = time_window
             self.update_time_window()
+            self.save_preferences()
     
     def customize_graph_colors(self):
         """Customize graph colors"""
@@ -688,6 +819,118 @@ class SystemMonitor(QMainWindow):
         if color.isValid():
             # For simplicity, change CPU curve color
             self.cpu_curve.setPen(pg.mkPen(color=color, width=2))
+    
+    def set_window_transparency(self, transparency):
+        """Set window transparency (0.0 to 1.0)"""
+        self.transparency = max(0.1, min(1.0, transparency))  # Clamp between 0.1 and 1.0
+        self.setWindowOpacity(self.transparency)
+    
+    def change_transparency(self):
+        """Change window transparency through slider dialog"""
+        from PyQt5.QtWidgets import QSlider, QVBoxLayout, QHBoxLayout, QLabel, QDialog
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Window Transparency")
+        dialog.setModal(True)
+        
+        layout = QVBoxLayout()
+        
+        # Explanation label
+        info_label = QLabel("Set window transparency for see-through mode:\n")
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+        
+        # Current value label
+        value_label = QLabel(f"Current: {int(self.transparency * 100)}%")
+        layout.addWidget(value_label)
+        
+        # Transparency slider
+        slider = QSlider(Qt.Horizontal)
+        slider.setMinimum(10)  # 10% minimum for visibility
+        slider.setMaximum(100)  # 100% = fully opaque
+        slider.setValue(int(self.transparency * 100))
+        slider.setTickPosition(QSlider.TicksBelow)
+        slider.setTickInterval(10)
+        layout.addWidget(slider)
+        
+        # Percentage labels
+        percent_layout = QHBoxLayout()
+        percent_layout.addWidget(QLabel("10%"))
+        percent_layout.addStretch()
+        percent_layout.addWidget(QLabel("50%"))
+        percent_layout.addStretch()
+        percent_layout.addWidget(QLabel("100%"))
+        layout.addLayout(percent_layout)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("OK")
+        cancel_button = QPushButton("Cancel")
+        reset_button = QPushButton("Reset")
+        
+        button_layout.addWidget(reset_button)
+        button_layout.addStretch()
+        button_layout.addWidget(cancel_button)
+        button_layout.addWidget(ok_button)
+        layout.addLayout(button_layout)
+        
+        dialog.setLayout(layout)
+        
+        # Connect signals
+        def update_value(value):
+            value_label.setText(f"Current: {value}%")
+            # Preview transparency in real-time
+            self.set_window_transparency(value / 100.0)
+        
+        def reset_transparency():
+            slider.setValue(100)
+        
+        def accept_changes():
+            self.transparency = slider.value() / 100.0
+            self.save_preferences()
+            dialog.accept()
+        
+        def reject_changes():
+            # Restore original transparency
+            self.set_window_transparency(self.transparency)
+            dialog.reject()
+        
+        slider.valueChanged.connect(update_value)
+        ok_button.clicked.connect(accept_changes)
+        cancel_button.clicked.connect(reject_changes)
+        reset_button.clicked.connect(reset_transparency)
+        
+        # Store original transparency in case of cancel
+        original_transparency = self.transparency
+        
+        # Show dialog
+        dialog.exec_()
+        
+        # If dialog was rejected, restore original
+        if dialog.result() == QDialog.Rejected:
+            self.set_window_transparency(original_transparency)
+    
+    def set_always_on_top(self, always_on_top):
+        """Set window always on top state"""
+        self.always_on_top = always_on_top
+        
+        # Set window flags based on always on top state
+        flags = self.windowFlags()
+        if always_on_top:
+            # Add WindowStaysOnTopHint flag
+            self.setWindowFlags(flags | Qt.WindowStaysOnTopHint)
+        else:
+            # Remove WindowStaysOnTopHint flag
+            self.setWindowFlags(flags & ~Qt.WindowStaysOnTopHint)
+        
+        # Show the window again to apply the new flags
+        self.show()
+    
+    def toggle_always_on_top(self):
+        """Toggle always on top state"""
+        self.always_on_top = not self.always_on_top
+        self.set_always_on_top(self.always_on_top)
+        self.save_preferences()
     
     # Help Menu Methods
     def show_about(self):
