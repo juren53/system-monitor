@@ -75,8 +75,10 @@ class SystemMonitor(QMainWindow):
         self.setup_menu_bar()
         self.setup_timer()
         
-        # Register save function to be called on application exit
-        atexit.register(self.save_window_geometry)
+        # Add periodic save timer as backup
+        self.save_timer = QTimer()
+        self.save_timer.timeout.connect(self.save_window_geometry)
+        self.save_timer.start(30000)  # Save every 30 seconds
         
     def setup_pyqtgraph_theme(self):
         """Configure PyQtGraph to match system theme"""
@@ -485,6 +487,15 @@ class SystemMonitor(QMainWindow):
             print(f"Error getting process info: {e}")
     
     # Window Geometry Methods
+    def closeEvent(self, event):
+        """Handle window close event to save geometry"""
+        try:
+            self.save_window_geometry()
+            print("Window geometry saved successfully")
+        except Exception as e:
+            print(f"Failed to save window geometry: {e}")
+        event.accept()
+    
     def load_window_geometry(self):
         """Load window size and position from config file"""
         try:
@@ -498,6 +509,7 @@ class SystemMonitor(QMainWindow):
                     y = config.get('y', 100)
                     self.setGeometry(x, y, width, height)
                     self._initial_geometry_loaded = True
+                    print(f"Restored window geometry: {width}x{height} at ({x}, {y})")  # Debug output
         except Exception as e:
             # Silently ignore errors and use default geometry
             pass
@@ -521,16 +533,16 @@ class SystemMonitor(QMainWindow):
                     with open(self.config_file, 'r') as f:
                         existing_config = json.load(f)
                 except:
-                    pass
+                    existing_config = {}
             
             # Merge new settings with existing ones
             existing_config.update(config)
             
             with open(self.config_file, 'w') as f:
                 json.dump(existing_config, f, indent=2)
+                print(f"Saved window geometry to: {self.config_file}")  # Debug output
         except Exception as e:
-            # Silently ignore errors
-            pass
+            print(f"Failed to save window geometry: {e}")  # Debug output
     
     # File Menu Methods
     def save_data(self):
