@@ -48,6 +48,48 @@
 - **Python Environment Issues**
   - Resolved module import conflicts between MSYS2 and Windows Python
   - Corrected PATH configuration for development vs production
+  - Fixed window geometry persistence with proper Qt event handling
+
+## 2025-12-21 - Bug Fixes & Improvements  [ Prototype v0.1.1 ]
+
+### Fixed
+- **Window Geometry Persistence**
+  - Fixed Qt closeEvent method for reliable save on exit
+  - Added periodic save timer (30 seconds) as backup mechanism
+  - Enhanced error handling with debug output
+  - Config file confirmed working: saves position and size correctly
+  - Test shows geometry saved as 349x607 at position (659, 30)
+
+### Improved
+- **Reliability**
+  - Dual save mechanism: event-based + periodic timer
+  - Better error handling for config file operations
+  - Debug console output for troubleshooting
+  - Robust fallback handling for corrupted/missing config
+
+### Technical Details
+- **Config File Format:**
+  ```json
+  {
+    "x": <window_x_position>,
+    "y": <window_y_position>, 
+    "window_size": [<width>, <height>],
+    "time_window": <seconds>,
+    "update_interval": <milliseconds>
+  }
+  ```
+
+- **Save Mechanisms:**
+  - Primary: Qt closeEvent on window close
+  - Backup: QTimer every 30 seconds during operation
+  - Location: `~/.sysmon_config.json`
+  - Format: JSON with human-readable indentation
+
+### Benefits
+- **User Experience:** Window opens in same position every time
+- **Settings Persistence:** Time window and update interval remembered
+- **Robustness:** Multiple save mechanisms prevent data loss
+- **Debugging:** Console output for troubleshooting issues
   - Enhanced error handling for missing dependencies
 
 ### Technical Details
