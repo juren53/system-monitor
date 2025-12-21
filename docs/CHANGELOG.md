@@ -73,12 +73,21 @@
 - **Performance:** Noticeable improvement in real-time responsiveness
 - **Memory:** Lower overall system resource usage
 
+### Added
+- **Window Geometry Persistence**
+  - Saves window size and position to `~/.sysmon_config.json`
+  - Restores window geometry on application startup
+  - Stores time window and update interval preferences
+  - Automatic save on application exit using `atexit`
+  - Enhanced reset settings to clear config file
+
 ### Benefits
 - **Speed:** Up to 150x faster plotting performance
 - **Integration:** Native Qt look and feel
 - **Usability:** Professional menu system with standard shortcuts
 - **Visual:** Automatic theme matching for seamless appearance
 - **Platform:** Optimized for Windows development environment
+- **Convenience:** Remembers your window layout and preferences
 
 ---
 
