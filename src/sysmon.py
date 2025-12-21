@@ -989,7 +989,7 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
         dialog = QDialog(self)
         dialog.setWindowTitle("SysMon ChangeLog")
         dialog.setModal(True)
-        dialog.resize(800, 600)
+        dialog.resize(900, 700)
         
         layout = QVBoxLayout()
         
@@ -999,12 +999,15 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
         text_area.setPlainText(changelog_content)
         text_area.setStyleSheet("""
             QTextEdit {
-                font-family: 'Courier New', monospace;
-                font-size: 10px;
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                font-size: 12px;
+                line-height: 1.4;
                 background-color: #f8f9fa;
                 color: #212529;
                 border: 1px solid #dee2e6;
-                padding: 8px;
+                padding: 12px;
+                selection-background-color: #0078d7;
+                selection-color: white;
             }
         """)
         layout.addWidget(text_area)
