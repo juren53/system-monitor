@@ -680,7 +680,7 @@ class SystemMonitor(QMainWindow):
             # Save main config (window geometry, etc.)
             with open(self.config_file, 'w') as f:
                 json.dump(existing_config, f, indent=2)
-                print(f"Saved configuration to: {self.config_file}")  # Debug output
+                # print(f"Saved configuration to: {self.config_file}")  # Debug output
         except Exception as e:
             print(f"Failed to save configuration: {e}")  # Debug output
     
