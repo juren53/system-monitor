@@ -156,7 +156,7 @@ def show_instance_already_running(app):
         time.sleep(0.01)  # Small delay to prevent CPU spinning
 
 # Version Information
-VERSION = "0.2.3"
+VERSION = "0.2.6"
 RELEASE_DATE = "2025-12-22"
 FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
 

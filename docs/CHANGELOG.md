@@ -1,6 +1,6 @@
 # Changelog - sysmon.py
 
-## 2025-12-22 - Real-Time Memory Display Enhancement  [ v0.2.3 ]
+## 2025-12-22 - Real-Time Memory Display Enhancement  [ v0.2.6 ]
 
 ### 💾 **Memory Monitoring Features**
 - **Real-Time RAM Display:** Live RAM usage with total/available/percentage
