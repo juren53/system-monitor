@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 SysMon - PyQtGraph-based System Monitor v0.2.0
 Release: 2025-12-21
