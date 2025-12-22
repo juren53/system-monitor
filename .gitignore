@@ -65,3 +65,10 @@ build/
 *.egg/
 archive/
 
+# Test files (temporary development artifacts)
+test-*.py
+test-fix.py
+verify-*.py
+final-*.py
+*test*.py
+
