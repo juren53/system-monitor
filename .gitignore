@@ -62,4 +62,6 @@ htmlcov/
 # Distribution
 dist/
 build/
-*.egg
+*.egg/
+archive/
+
