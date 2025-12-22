@@ -1,13 +1,14 @@
 # SysMon - Real-time System Monitor
 
-**Version:** v0.2.0 (Production Release)  
-**Release Date:** 2025-12-21
+**Version:** v0.2.6 (Production Release)  
+**Release Date:** 2025-12-22
 
 ## Description
 Comprehensive system monitoring application with real-time graphs for CPU, Disk I/O, and Network activity. Built with PyQtGraph for high-performance real-time visualization.
 
 ## Features
 - **Real-time monitoring** with smooth scrolling graphs (75-150x faster than matplotlib)
+- **Live memory display** showing RAM and Swap usage in real-time
 - **Professional menu system** with File, Edit, View, Config, Help menus
 - **Window transparency** for see-through mode (10%-100% opacity control)
 - **Always On Top** toggle for floating desktop monitor
@@ -42,9 +43,8 @@ python3 src/sysmon.py
 - `-t, --time-window`: Time window in seconds (5-120, default: 20)
 
 ### Interactive Controls
-- `+` or `=`: Increase time window by 5 seconds
-- `-`: Decrease time window by 5 seconds
 - Double-click on graph: Show top 10 processes for that metric
+- Config menu: Time window settings, transparency, always-on-top
 
 ## Configuration
 Configuration saved to: `~/.sysmon_config.json`
