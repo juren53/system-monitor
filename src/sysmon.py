@@ -11,18 +11,170 @@ import json
 import os
 import atexit
 import platform
+import datetime
 from collections import deque
 
+def filter_stderr_gdkpixbuf():
+    """Filter out harmless GdkPixbuf critical warnings on Linux"""
+    import threading
+    import sys
+    import os
+    
+    def stderr_filter_thread():
+        """Background thread to filter stderr output"""
+        import subprocess
+        import select
+        
+        # Create pipe for stderr
+        r, w = os.pipe()
+        
+        # Redirect stderr to our pipe
+        old_stderr = sys.stderr.fileno()
+        os.dup2(w, old_stderr)
+        os.close(w)
+        
+        while True:
+            try:
+                # Wait for data on stderr
+                ready, _, _ = select.select([r], [], [], 0.1)
+                if ready:
+                    data = os.read(r, 8192).decode('utf-8', errors='ignore')
+                    if data:
+                        lines = data.split('\n')
+                        for line in lines:
+                            # Filter out GdkPixbuf critical warnings
+                            if ('GdkPixbuf-CRITICAL' in line and 
+                                ('gdk_pixbuf_get_' in line or 
+                                 'GDK_IS_PIXBUF' in line)):
+                                # Skip these harmless warnings
+                                continue
+                            elif line.strip():
+                                # Print other error messages
+                                print(line, file=sys.stderr, flush=True)
+            except (OSError, KeyboardInterrupt):
+                break
+            except Exception:
+                break
+    
+    # Start filter thread only on Linux systems
+    if platform.system() == "Linux":
+        try:
+            filter_thread = threading.Thread(target=stderr_filter_thread, daemon=True)
+            filter_thread.start()
+        except Exception:
+            # If filtering fails, continue without it
+            pass
+
+# Apply stderr filtering at startup
+filter_stderr_gdkpixbuf()
+
+# Single instance management
+shared_memory = None
+system_semaphore = None
+
+def check_single_instance():
+    """Check if SysMon is already running using Qt native mechanisms"""
+    global shared_memory, system_semaphore
+    
+    # Use version-specific keys to allow different versions to coexist
+    instance_key = f"sysmon-v{VERSION}-instance"
+    semaphore_key = f"sysmon-v{VERSION}-semaphore"
+    
+    # Create system semaphore for thread safety
+    if system_semaphore is None:
+        system_semaphore = QSystemSemaphore(semaphore_key, 1)
+    
+    system_semaphore.acquire()  # Raise semaphore to prevent race conditions
+    
+    # On Linux/Unix, clean up shared memory from abnormal terminations
+    if sys.platform != 'win32':
+        cleanup_shared_mem = QSharedMemory(instance_key)
+        if cleanup_shared_mem.attach():
+            cleanup_shared_mem.detach()
+    
+    # Try to create shared memory
+    if shared_memory is None:
+        shared_memory = QSharedMemory(instance_key)
+    
+    if shared_memory.attach():
+        # Shared memory exists - application is already running
+        system_semaphore.release()
+        return False
+    else:
+        # Create shared memory for this instance
+        if not shared_memory.create(1):
+            # Failed to create - another instance started simultaneously
+            system_semaphore.release()
+            return False
+        
+        # Successfully created shared memory
+        system_semaphore.release()
+        return True
+
+def cleanup_single_instance():
+    """Clean up single instance resources"""
+    global shared_memory, system_semaphore
+    
+    try:
+        if shared_memory:
+            if shared_memory.isAttached():
+                shared_memory.detach()
+    except Exception:
+        pass  # Ignore cleanup errors
+    
+    try:
+        if system_semaphore:
+            system_semaphore.release()
+    except Exception:
+        pass  # Ignore cleanup errors
+
+def show_instance_already_running(app):
+    """Show message box when another instance is detected"""
+    # Validate app parameter
+    if app is None:
+        print("Error: Invalid QApplication instance")
+        return
+    
+    # Process pending events to ensure app is properly initialized
+    app.processEvents()
+    
+    msg_box = QMessageBox()
+    msg_box.setIcon(QMessageBox.Warning)
+    msg_box.setWindowTitle('SysMon Already Running')
+    msg_box.setText('SysMon is already running on this system.\n\n'
+                   'Only one instance of SysMon can run at same time.\n\n'
+                   'If you believe this is an error, please check your running processes.')
+    msg_box.setStandardButtons(QMessageBox.Ok)
+    
+    # Show dialog and process events manually since main event loop isn't running
+    msg_box.show()
+    
+    # Process events until dialog is closed
+    while msg_box.isVisible():
+        app.processEvents()
+        import time
+        time.sleep(0.01)  # Small delay to prevent CPU spinning
+
 # Version Information
-VERSION = "0.2.2"
-RELEASE_DATE = "2025-12-21"
+VERSION = "0.2.5"
+RELEASE_DATE = "2025-12-22"
 FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
+
+# Build Information
+BUILD_DATE = "2025-12-22"
+BUILD_TIME = datetime.datetime.now().strftime("%H:%M:%S")
+BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
+
+# Runtime Information
+APPLICATION_START_TIME = datetime.datetime.now()
+PYTHON_VERSION = sys.version.split()[0]
+PLATFORM_INFO = platform.platform()
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
                              QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
                              QInputDialog, QColorDialog, QCheckBox, QSpinBox,
                              QGroupBox, QFormLayout, QDialogButtonBox)
-from PyQt5.QtCore import QTimer, Qt, QSize
+from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore
 from PyQt5.QtGui import QKeySequence, QIcon, QPalette
 import pyqtgraph as pg
 import psutil
@@ -98,6 +250,9 @@ class SystemMonitor(QMainWindow):
         super().__init__()
         self.setWindowTitle("SysMon - PyQtGraph Edition")
         
+        # Set window icon (fallback for window-level icon)
+        self.set_window_icon()
+        
         # XDG-compliant configuration directory
         self.config_dir = get_xdg_config_dir()
         ensure_config_directory(self.config_dir)
@@ -171,6 +326,31 @@ class SystemMonitor(QMainWindow):
                 antialias=True,
                 enableExperimental=True
             )
+    
+    def set_window_icon(self):
+        """Set window icon with proper error handling"""
+        import os
+        
+        # Icon search paths (same as set_application_icon but for instance level)
+        icon_paths = [
+            os.path.join(os.path.dirname(__file__), '..', 'icons', 'ICON_SysMon.png'),
+            os.path.join(os.path.dirname(__file__), '..', 'icons', 'ICON_SysMon.ico'),
+            os.path.join(os.getcwd(), 'icons', 'ICON_SysMon.png'),
+            os.path.join(os.getcwd(), 'icons', 'ICON_SysMon.ico'),
+            'icons/ICON_SysMon.png',
+            'icons/ICON_SysMon.ico'
+        ]
+        
+        for icon_path in icon_paths:
+            try:
+                if os.path.exists(icon_path):
+                    icon = QIcon(icon_path)
+                    if not icon.isNull():
+                        self.setWindowIcon(icon)
+                        return
+            except Exception:
+                continue
+        # If no icon found, continue silently (application icon should be set already)
         
     def setup_ui(self):
         """Setup the user interface"""
@@ -248,7 +428,7 @@ class SystemMonitor(QMainWindow):
         self.version_label.setStyleSheet("""
             QLabel {
                 color: #808080;
-                font-size: 9px;
+                font-size: 12px;
                 font-style: italic;
                 padding: 2px;
             }
@@ -1027,35 +1207,143 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
         dialog.exec_()
     
     def show_about(self):
-        """Show about dialog"""
-        about_text = """
-        <b>SysMon - PyQtGraph Edition</b><br><br>
-        Real-time system monitoring with PyQtGraph<br><br>
-        <b>Features:</b><br>
-        • CPU, Disk I/O, and Network monitoring<br>
-        • Real-time graphs with smooth performance<br>
-        • Process drill-down information<br>
-        • Window transparency and always-on-top<br>
-        • XDG-compliant configuration<br>
-        • Professional menu system<br>
-        • Automatic system theme detection<br>
-        • Customizable time windows and colors<br><br>
-        <b>Version:</b> {FULL_VERSION} (Production Release)<br>
-        <b>Release Date:</b> {RELEASE_DATE}<br>
-        <b>Author:</b> System Monitor Project<br><br>
-        <b>Libraries:</b><br>
-        • PyQt5 - GUI Framework<br>
-        • PyQtGraph - High-performance plotting<br>
-        • psutil - System information<br>
-        • Platform detection - Cross-platform support<br>
+        """Show enhanced about dialog with version and timestamp info"""
+        # Calculate runtime information
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        uptime = datetime.datetime.now() - APPLICATION_START_TIME
+        uptime_str = str(uptime).split('.')[0]  # Remove microseconds
+        
+        about_text = f"""
+        <table style='margin: 10px; border-collapse: collapse; width: 100%;'>
+            <tr><td colspan='2' style='text-align: center; padding: 8px;'>
+                <h3 style='margin: 0; color: #2196F3;'>SysMon - PyQtGraph Edition</h3>
+                <p style='margin: 4px 0; color: #666;'>Real-time system monitoring with PyQtGraph</p>
+            </td></tr>
+            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
+            
+            <!-- Version Information -->
+            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Version:</td>
+                <td style='padding: 4px 8px; color: #555;'>{FULL_VERSION} (Production Release)</td></tr>
+            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Build Date:</td>
+                <td style='padding: 4px 8px; color: #555;'>{BUILD_INFO}</td></tr>
+            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Release Date:</td>
+                <td style='padding: 4px 8px; color: #555;'>{RELEASE_DATE}</td></tr>
+            
+            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
+            
+            <!-- Runtime Information -->
+            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Current Time:</td>
+                <td style='padding: 4px 8px; color: #555;'>{current_time}</td></tr>
+            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Application Uptime:</td>
+                <td style='padding: 4px 8px; color: #555;'>{uptime_str}</td></tr>
+            
+            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
+            
+            <!-- System Information -->
+            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Python Version:</td>
+                <td style='padding: 4px 8px; color: #555;'>{PYTHON_VERSION}</td></tr>
+            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Platform:</td>
+                <td style='padding: 4px 8px; color: #555;'>{PLATFORM_INFO}</td></tr>
+            
+            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
+            
+            <!-- Features -->
+            <tr><td colspan='2' style='padding: 8px;'>
+                <b style='color: #333;'>Features:</b><br>
+                <span style='color: #555; font-size: 0.9em;'>
+                • CPU, Disk I/O, and Network monitoring<br>
+                • Real-time graphs with smooth performance<br>
+                • Process drill-down information<br>
+                • Window transparency and always-on-top<br>
+                • XDG-compliant configuration<br>
+                • Professional menu system<br>
+                • Automatic system theme detection<br>
+                • Customizable time windows and colors
+                </span>
+            </td></tr>
+            
+            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
+            
+            <!-- Libraries -->
+            <tr><td colspan='2' style='padding: 8px;'>
+                <b style='color: #333;'>Libraries:</b><br>
+                <span style='color: #555; font-size: 0.9em;'>
+                • PyQt5 - GUI Framework<br>
+                • PyQtGraph - High-performance plotting<br>
+                • psutil - System information<br>
+                • Platform detection - Cross-platform support
+                </span>
+            </td></tr>
+            
+            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
+            
+            <!-- Author -->
+            <tr><td colspan='2' style='text-align: center; padding: 8px;'>
+                <b style='color: #333;'>Author:</b> System Monitor Project
+            </td></tr>
+        </table>
         """
         
         QMessageBox.about(self, "About SysMon", about_text)
 
+def set_application_icon(app):
+    """Set application icon with proper error handling"""
+    import os
+    
+    # Possible icon paths to search (in order of preference)
+    icon_paths = [
+        # Relative to source file
+        os.path.join(os.path.dirname(__file__), '..', 'icons', 'ICON_SysMon.png'),
+        os.path.join(os.path.dirname(__file__), '..', 'icons', 'ICON_SysMon.ico'),
+        # Current working directory paths
+        os.path.join(os.getcwd(), 'icons', 'ICON_SysMon.png'),
+        os.path.join(os.getcwd(), 'icons', 'ICON_SysMon.ico'),
+        os.path.join(os.getcwd(), 'assets', 'icons', 'ICON_sysmon.png'),
+        os.path.join(os.getcwd(), 'assets', 'icons', 'ICON_sysmon.ico'),
+        # Fallback paths
+        'icons/ICON_SysMon.png',
+        'icons/ICON_SysMon.ico',
+        'assets/icons/ICON_sysmon.png',
+        'assets/icons/ICON_sysmon.ico'
+    ]
+    
+    for icon_path in icon_paths:
+        try:
+            if os.path.exists(icon_path):
+                icon = QIcon(icon_path)
+                if not icon.isNull():
+                    app.setWindowIcon(icon)
+                    print(f"✓ Application icon set: {icon_path}")
+                    return True
+                else:
+                    print(f"⚠ Icon file exists but failed to load: {icon_path}")
+            else:
+                continue
+        except Exception as e:
+            print(f"⚠ Icon loading failed for {icon_path}: {e}")
+            continue
+    
+    print("⚠ No valid application icon found, using system default")
+    return False
+
 def main():
     app = QApplication(sys.argv)
+    
+    # Check for existing instance before creating any windows
+    if not check_single_instance():
+        show_instance_already_running(app)
+        return 1  # Exit with error code
+    
+    # Set application icon
+    set_application_icon(app)
+    
+    # Create and show main window
     monitor = SystemMonitor()
     monitor.show()
+    
+    # Register cleanup for single instance resources
+    atexit.register(cleanup_single_instance)
+    
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
