@@ -23,6 +23,63 @@
 
 ---
 
+## 2025-12-22 - Single Instance Prevention & Dialog Fix  [ v0.2.5 ]
+
+### 🚫 **Single Instance Implementation**
+- **Added Qt Native Single Instance Prevention** using QSharedMemory and QSystemSemaphore
+- **Cross-Platform Support**: Works on Windows, Linux, and macOS
+- **Version-Aware**: Different versions can coexist (uses version-specific keys)
+- **User-Friendly Messages**: Clear error dialog when attempting to launch second instance
+- **Automatic Cleanup**: Shared memory and semaphore cleanup on application exit
+- **Race Condition Protection**: Thread-safe implementation with semaphore locking
+
+### 🔧 **Dialog Fix Implementation**
+- **Removed Conflicting QApplication**: Fixed hanging dialog issue by reusing existing app instance
+- **Manual Event Processing**: Added proper event loop handling for dialog display
+- **Clean Application Exit**: Dialog now closes properly without "Force Quit" requirement
+- **User Experience**: Second instance shows message and exits cleanly after dialog dismissal
+
+### 🛠️ **Technical Implementation**
+- **Instance Key**: `sysmon-v0.2.5-instance` (version-specific)
+- **Semaphore Key**: `sysmon-v0.2.5-semaphore` (for thread safety)
+- **Shared Memory**: 1-byte allocation for presence detection
+- **Linux Cleanup**: Handles abnormal termination scenarios
+- **Graceful Exit**: Proper resource management with atexit registration
+- **Event Loop Fix**: Manual event processing resolves Qt lifecycle conflicts
+
+### 🎯 **User Experience**
+- **Prevention**: Second instance shows clear error message and exits
+- **No Resource Conflicts**: Eliminates duplicate system monitoring overhead
+- **Configuration Protection**: Prevents config file corruption from concurrent access
+- **Professional Behavior**: Industry-standard single-instance pattern
+- **Dialog Usability**: Error dialog can be closed normally without system intervention
+
+### 📚 **Error Message**
+```
+SysMon Already Running
+SysMon is already running on this system.
+
+Only one instance of SysMon can run at the same time.
+
+If you believe this is an error, please check your running processes.
+```
+
+### 🏗️ **Architecture Changes**
+- **New Functions**: `check_single_instance()`, `cleanup_single_instance()`, `show_instance_already_running(app)`
+- **Modified main()**: Early instance checking before window creation
+- **Global Variables**: `shared_memory`, `system_semaphore` for resource management
+- **Added Imports**: `QSharedMemory`, `QSystemSemaphore` from PyQt5.QtCore
+- **Function Signature Update**: `show_instance_already_running()` now accepts app parameter
+
+### ✅ **Testing Verified**
+- **First Instance**: Successfully acquires resources and runs
+- **Second Instance**: Properly detects existing instance and exits
+- **Dialog Behavior**: Error dialog displays and closes correctly
+- **Resource Cleanup**: Correctly releases shared memory and semaphore
+- **Cross-Platform**: Tested on Linux with Windows/macOS compatibility built-in
+
+---
+
 ## 2025-12-21 - User Accessibility & Documentation  [ v0.2.2 ]
 
 ### 📚 **User Documentation Access**

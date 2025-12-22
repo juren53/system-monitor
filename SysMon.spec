@@ -1,8 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
 SysMon PyInstaller Specification
-Version: v0.2.0
-Release: 2025-12-21
+Version: v0.2.5
+Release: 2025-12-22
 """
 
 a = Analysis(

@@ -18,5 +18,5 @@ Example formats:
 ## Version Numbering
 - Format: `v0.0.X` for releases
 - Format: `v0.0.Xa`, `v0.0.Xb`, `v0.0.Xc` for point releases/patches
-- Update version in both the UI label and header comment when making releases
+- Update version in the UI label, the About dialog and header comment when making releases
 
