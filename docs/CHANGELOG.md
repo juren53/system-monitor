@@ -1,5 +1,28 @@
 # Changelog - sysmon.py
 
+## 2025-12-22 - Real-Time Memory Display Enhancement  [ v0.2.3 ]
+
+### 💾 **Memory Monitoring Features**
+- **Real-Time RAM Display:** Live RAM usage with total/available/percentage
+- **Real-Time Swap Display:** Live swap memory usage with total/available/percentage  
+- **GB Unit Format:** Clean display using GB units (e.g., "15.6GB | 3.1GB | 79%")
+- **Color-Coded Labels:** RAM in blue (#2196F3), Swap in orange (#FF9800)
+- **Compact Layout:** Efficient use of previously underutilized UI space
+
+### 🔄 **UI Transformation**
+- **Removed Time Window Controls:** Relocated to Config menu for cleaner interface
+- **Replaced Info Text:** Removed "Double-click graphs for process details" from header
+- **Enhanced Visibility:** Memory information now prominent at top of application
+- **Preserved Functionality:** All existing controls available through Config menu
+
+### 📊 **Data Integration**
+- **psutil Integration:** Uses virtual_memory() and swap_memory() APIs
+- **Real-Time Updates:** Memory data refreshes with same frequency as graphs (200ms)
+- **Accurate Calculations:** Proper byte-to-GB conversion and percentage calculations
+- **Error Handling:** Graceful handling of systems with no swap space
+
+---
+
 ## 2025-12-21 - User Accessibility & Documentation  [ v0.2.2 ]
 
 ### 📚 **User Documentation Access**

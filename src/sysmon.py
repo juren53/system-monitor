@@ -156,7 +156,7 @@ def show_instance_already_running(app):
         time.sleep(0.01)  # Small delay to prevent CPU spinning
 
 # Version Information
-VERSION = "0.2.5"
+VERSION = "0.2.3"
 RELEASE_DATE = "2025-12-22"
 FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
 
@@ -286,6 +286,14 @@ class SystemMonitor(QMainWindow):
         self.net_recv_data = deque(maxlen=self.max_points)
         self.time_data = deque(maxlen=self.max_points)
         
+        # Memory data storage
+        self.ram_total = 0
+        self.ram_available = 0
+        self.ram_percent = 0
+        self.swap_total = 0
+        self.swap_available = 0
+        self.swap_percent = 0
+        
         # Previous values for rate calculation
         self.prev_disk_io = psutil.disk_io_counters()
         self.prev_net_io = psutil.net_io_counters()
@@ -358,26 +366,20 @@ class SystemMonitor(QMainWindow):
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
         
-        # Control panel
-        control_layout = QHBoxLayout()
+        # Memory info panel
+        memory_layout = QHBoxLayout()
         
-        self.time_label = QLabel(f"Time Window: {self.time_window}s")
-        control_layout.addWidget(self.time_label)
+        self.ram_label = QLabel("Ram: --/--/--")
+        self.ram_label.setStyleSheet("QLabel { font-weight: bold; color: #2196F3; }")
+        memory_layout.addWidget(self.ram_label)
         
-        decrease_btn = QPushButton("-")
-        decrease_btn.clicked.connect(self.decrease_time_window)
-        control_layout.addWidget(decrease_btn)
+        memory_layout.addStretch()
         
-        increase_btn = QPushButton("+")
-        increase_btn.clicked.connect(self.increase_time_window)
-        control_layout.addWidget(increase_btn)
+        self.swap_label = QLabel("Swap: --/--/--")
+        self.swap_label.setStyleSheet("QLabel { font-weight: bold; color: #FF9800; }")
+        memory_layout.addWidget(self.swap_label)
         
-        control_layout.addStretch()
-        
-        info_label = QLabel("Double-click graphs for process details")
-        control_layout.addWidget(info_label)
-        
-        main_layout.addLayout(control_layout)
+        main_layout.addLayout(memory_layout)
         
         # Setup plots with system theme
         self.setup_pyqtgraph_theme()
@@ -659,6 +661,18 @@ class SystemMonitor(QMainWindow):
             self.net_recv_data.append(max(0, recv_rate))
             self.prev_net_io = net_io
         
+        # Memory information
+        memory = psutil.virtual_memory()
+        self.ram_total = memory.total / (1024**2)  # Convert to MB
+        self.ram_available = memory.available / (1024**2)  # Convert to MB
+        self.ram_percent = memory.percent
+        
+        # Swap information
+        swap = psutil.swap_memory()
+        self.swap_total = swap.total / (1024**2)  # Convert to MB
+        self.swap_available = swap.free / (1024**2)  # Convert to MB
+        self.swap_percent = swap.percent
+        
         # Time axis
         if len(self.time_data) == 0:
             self.time_data.append(0)
@@ -666,6 +680,10 @@ class SystemMonitor(QMainWindow):
             self.time_data.append(self.time_data[-1] + elapsed)
         
         self.prev_time = current_time
+        
+        # Update memory display labels
+        self.ram_label.setText(f"Ram: {self.ram_total/1024:.1f}GB | {self.ram_available/1024:.1f}GB | {self.ram_percent:.0f}%")
+        self.swap_label.setText(f"Swap: {self.swap_total/1024:.1f}GB | {self.swap_available/1024:.1f}GB | {self.swap_percent:.0f}%")
         
         # Update plots
         self.update_plots()
@@ -715,8 +733,6 @@ class SystemMonitor(QMainWindow):
         self.cpu_plot.setXRange(-self.time_window, 0)
         self.disk_plot.setXRange(-self.time_window, 0)
         self.net_plot.setXRange(-self.time_window, 0)
-        
-        self.time_label.setText(f"Time Window: {self.time_window}s")
         
     def show_top_processes(self, metric_type):
         """Show top processes for the specified metric"""
