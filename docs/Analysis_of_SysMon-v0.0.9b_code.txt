@@ -7,7 +7,7 @@ The analysis found several issues in sysmon.py:
 Critical Error:
 - Line 538: Missing line continuation - will cause syntax error
 
-Cause: Perfect! The issue was that line 538 (and the entire file) had Windows line endings (\r\n) instead of Unix line endings (\n). This can cause various problems on Unix/Linux systems including:
+Cause: The issue was that line 538 (and the entire file) had Windows line endings (\r\n) instead of Unix line endings (\n). This can cause various problems on Unix/Linux systems including:
 1. Syntax interpretation issues - Python can sometimes have trouble with CRLF endings
 2. Script execution problems - The shebang line may not work properly
 3. Tool compatibility issues - Many Unix tools expect LF endings
