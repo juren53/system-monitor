@@ -12,12 +12,13 @@
 - **Development Transparency:** Users can see complete feature evolution
 
 ### 🔧 **UI/UX Improvements**
-- **Font Size:** Increased from 10px to 12px for better readability
+- **Font Size:** Increased from 10px to 14px for optimal readability
 - **Line Height:** Added 1.4 line-height for improved spacing
 - **Dialog Size:** Expanded from 800x600 to 900x700 for more content
 - **Padding:** Increased from 8px to 12px for better text spacing
 - **Font Family:** Prioritized Consolas (Windows), Monaco (macOS), Courier New (fallback)
 - **Selection Highlighting:** Added text selection styling for better user experience
+- **QTextEdit Viewer:** Implemented QTextEdit-based changelog viewer for optimal performance
 
 ---
 

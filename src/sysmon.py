@@ -1000,7 +1000,7 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
         text_area.setStyleSheet("""
             QTextEdit {
                 font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-                font-size: 12px;
+                font-size: 14px;
                 line-height: 1.4;
                 background-color: #f8f9fa;
                 color: #212529;
