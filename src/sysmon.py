@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.7
-Release: 2025-12-23 0018 CST
+SysMon - PyQtGraph-based System Monitor v0.2.8
+Release: 2025-12-23 1930 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -14,7 +14,18 @@ import atexit
 import platform
 import datetime
 import threading
+import time
 from collections import deque
+
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+                             QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
+                             QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
+                             QInputDialog, QColorDialog, QCheckBox, QSpinBox,
+                             QGroupBox, QFormLayout, QDialogButtonBox)
+from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject
+from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont
+import pyqtgraph as pg
+import psutil
 
 def filter_stderr_gdkpixbuf():
     """Filter out harmless GdkPixbuf critical warnings on Linux"""
@@ -69,6 +80,21 @@ def filter_stderr_gdkpixbuf():
 
 # Apply stderr filtering at startup
 filter_stderr_gdkpixbuf()
+
+# Version Information
+VERSION = "0.2.7"
+RELEASE_DATE = "2025-12-23"
+FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
+
+# Build Information
+BUILD_DATE = "2025-12-22"
+BUILD_TIME = datetime.datetime.now().strftime("%H:%M:%S")
+BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
+
+# Runtime Information
+APPLICATION_START_TIME = datetime.datetime.now()
+PYTHON_VERSION = sys.version.split()[0]
+PLATFORM_INFO = platform.platform()
 
 # Single instance management
 shared_memory = None
@@ -154,33 +180,7 @@ def show_instance_already_running(app):
     # Process events until dialog is closed
     while msg_box.isVisible():
         app.processEvents()
-        import time
         time.sleep(0.01)  # Small delay to prevent CPU spinning
-
-# Version Information
-VERSION = "0.2.7"
-RELEASE_DATE = "2025-12-23"
-FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
-
-# Build Information
-BUILD_DATE = "2025-12-22"
-BUILD_TIME = datetime.datetime.now().strftime("%H:%M:%S")
-BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
-
-# Runtime Information
-APPLICATION_START_TIME = datetime.datetime.now()
-PYTHON_VERSION = sys.version.split()[0]
-PLATFORM_INFO = platform.platform()
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                             QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
-                             QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
-                             QInputDialog, QColorDialog, QCheckBox, QSpinBox,
-                             QGroupBox, QFormLayout, QDialogButtonBox)
-from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject, QThread, pyqtSignal, QObject
-from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont
-import pyqtgraph as pg
-import psutil
-import time
 
 def get_xdg_config_dir():
     """Get XDG-compliant configuration directory"""
@@ -740,6 +740,13 @@ class SystemMonitor(QMainWindow):
         changelog_action.setStatusTip('View SysMon development history and changes')
         changelog_action.triggered.connect(self.show_changelog)
         help_menu.addAction(changelog_action)
+        
+        help_menu.addSeparator()
+        
+        users_guide_action = QAction('&Users Guide', self)
+        users_guide_action.setStatusTip('Open comprehensive user documentation')
+        users_guide_action.triggered.connect(self.show_users_guide)
+        help_menu.addAction(users_guide_action)
         
         help_menu.addSeparator()
         
@@ -1487,7 +1494,86 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
         
         # Show dialog
         dialog.exec_()
+    
+    def show_users_guide(self):
+        """Show comprehensive users guide dialog"""
+        # Try to read the users guide file
+        users_guide_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'users-guide.md')
+        
+        try:
+            with open(users_guide_path, 'r', encoding='utf-8', errors='replace') as f:
+                users_guide_content = f.read()
+        except Exception as e:
+            users_guide_content = f"""# SysMon Users Guide
 
+Unable to load users guide file.
+
+Error: {str(e)}
+
+Please check the docs/users-guide.md file in the SysMon repository."""
+        
+        # Create dialog similar to changelog but wider for better readability
+        dialog = QDialog(self)
+        dialog.setWindowTitle("SysMon Users Guide")
+        dialog.setModal(True)
+        dialog.resize(1000, 750)  # Larger size for comprehensive guide
+        
+        layout = QVBoxLayout()
+        
+        # Create text area with users guide content
+        text_area = QTextEdit()
+        text_area.setReadOnly(True)
+        text_area.setStyleSheet("""
+            QTextEdit {
+                border: none;
+                background-color: #ffffff;
+                padding: 20px;
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                line-height: 1.4;
+            }
+        """)
+        text_area.setPlainText(users_guide_content)
+        layout.addWidget(text_area)
+        
+        # Add close button
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        close_button = QPushButton("Close")
+        close_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+            QPushButton:pressed {
+                background-color: #0D47A1;
+            }
+        """)
+        close_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(close_button)
+        
+        layout.addLayout(button_layout)
+        dialog.setLayout(layout)
+        
+        # Center dialog on screen
+        dialog.setGeometry(
+            dialog.x() + (dialog.width() // 2),
+            dialog.y() + (dialog.height() // 2),
+            dialog.width(),
+            dialog.height()
+        )
+        
+        # Show dialog
+        dialog.exec_()
+    
 def set_application_icon(app):
     """Set application icon with proper error handling"""
     import os

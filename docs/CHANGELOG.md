@@ -1,5 +1,27 @@
 # Changelog - sysmon.py
 
+## 2025-12-23 1930 CST - Users Guide Documentation Update  [ v0.2.8 ]
+
+### 📚 **Documentation Maintenance**
+- **Version Bump:** Updated from v0.2.7 to v0.2.8 across all documentation
+- **Users Guide Refresh:** Updated version and date stamps in comprehensive user guide
+- **README Synchronization:** Maintained version consistency in main project documentation
+- **Source Code Header:** Updated version label in sysmon.py for proper identification
+
+### 🔧 **Technical Documentation Updates**
+- **Cross-File Consistency:** All documentation files now show v0.2.8 with current date
+- **Central Time Compliance:** All timestamps follow CST/CDT timezone requirements
+- **Version Synchronization:** README, Users Guide, and source headers aligned
+- **Release Preparation:** Documentation ready for v0.2.8 release deployment
+
+### 📖 **Users Guide Enhancements**
+- **Current Version Reference:** Users Guide now references v0.2.8 as latest release
+- **Date Stamp Update:** Documentation timestamp reflects current maintenance cycle
+- **Feature Completeness:** Guide documents all features available in v0.2.8
+- **Maintenance Record:** Clear version history for user reference
+
+---
+
 ## 2025-12-23 0018 CST - Drill-Down Performance & UI Alignment Fix  [ v0.2.7 ]
 
 ### 🚀 **Major Performance Optimization**
