@@ -1339,7 +1339,7 @@ class SystemMonitor(QMainWindow):
         # Create dialog
         dialog = QDialog(self)
         dialog.setWindowTitle("Graph Colors")
-        dialog.setModal(True)
+        dialog.setModal(True)  # CRITICAL: Ensure dialog appears on top and blocks main window
         dialog.resize(600, 500)
         
         layout = QVBoxLayout()
