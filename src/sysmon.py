@@ -746,6 +746,7 @@ class SystemMonitor(QMainWindow):
         
         graph_colors_action = QAction('&Graph Colors...', self)
         graph_colors_action.setStatusTip('Customize graph colors')
+        graph_colors_action.setShortcut('Ctrl+G')  # Add keyboard shortcut
         graph_colors_action.triggered.connect(self.customize_graph_colors)
         config_menu.addAction(graph_colors_action)
         
