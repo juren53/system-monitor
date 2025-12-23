@@ -996,52 +996,62 @@ class SystemMonitor(QMainWindow):
             super().keyPressEvent(event)
     
     def position_window_left(self):
-        """Position window on left half of current screen"""
+        """Move window to left side while maintaining current window size"""
         try:
+            # Get current window dimensions (preserve user's preferred size)
+            current_width = self.width()
+            current_height = self.height()
+            
             # Get the screen where the window is currently located
             screen = self.screen()
             if not screen:
-                # Fallback to primary screen if window is not on any screen
+                # Fallback to primary screen if the window is not on any screen
                 screen = QGuiApplication.primaryScreen()
             
             # Get available geometry (excluding taskbars, docks, etc.)
             available = screen.availableGeometry()
             
-            # Calculate left half of available screen
-            window_width = available.width() // 2
-            window_height = available.height()
+            # Calculate left position (preserve current window size)
             x_pos = available.x()
-            y_pos = available.y()
+            # Ensure y position keeps window fully visible on screen
+            y_pos = max(available.y(), 
+                          min(self.y(), 
+                              available.y() + available.height() - current_height))
             
-            # Apply new position with current window height
-            self.setGeometry(x_pos, y_pos, window_width, window_height)
+            # Move window without resizing (preserve user's preferred dimensions)
+            self.move(x_pos, y_pos)
             
         except Exception as e:
-            print(f"Error positioning window to left: {e}")
+            print(f"Error moving window to left: {e}")
     
     def position_window_right(self):
-        """Position window on right half of current screen"""
+        """Move window to right side while maintaining current window size"""
         try:
+            # Get current window dimensions (preserve user's preferred size)
+            current_width = self.width()
+            current_height = self.height()
+            
             # Get the screen where the window is currently located
             screen = self.screen()
             if not screen:
-                # Fallback to primary screen if window is not on any screen
+                # Fallback to primary screen if the window is not on any screen
                 screen = QGuiApplication.primaryScreen()
             
             # Get available geometry (excluding taskbars, docks, etc.)
             available = screen.availableGeometry()
             
-            # Calculate right half of available screen
-            window_width = available.width() // 2
-            window_height = available.height()
-            x_pos = available.x() + window_width  # Start from middle of available area
-            y_pos = available.y()
+            # Calculate right position (preserve current window size)
+            x_pos = available.x() + available.width() - current_width
+            # Ensure y position keeps window fully visible on screen
+            y_pos = max(available.y(), 
+                          min(self.y(), 
+                              available.y() + available.height() - current_height))
             
-            # Apply new position with current window height
-            self.setGeometry(x_pos, y_pos, window_width, window_height)
+            # Move window without resizing (preserve user's preferred dimensions)
+            self.move(x_pos, y_pos)
             
         except Exception as e:
-            print(f"Error positioning window to right: {e}")
+            print(f"Error moving window to right: {e}")
 
 # Window Geometry Methods
     def closeEvent(self, event):
@@ -1663,8 +1673,8 @@ Please check the docs/users-guide.md file in the SysMon repository."""
 # SysMon Keyboard Shortcuts & Navigation
 
 ## Window Positioning Navigation
-**← Left Arrow**  : Position window to left half of current screen
-**→ Right Arrow** : Position window to right half of current screen
+**← Left Arrow**  : Move window to left side of current screen (preserves window size)
+**→ Right Arrow** : Move window to right side of current screen (preserves window size)
 
 ## Existing Keyboard Shortcuts
 
@@ -1684,13 +1694,16 @@ Please check the docs/users-guide.md file in the SysMon repository."""
 ### Navigation Tips
 - **Arrow Keys** work instantly - no need to drag window manually
 - **Multi-Monitor** support: Arrow keys work on the screen where window is located
-- **Smart Positioning**: Window maintains current height and vertical position
+- **Size Preserving**: Window maintains current width and height during movement
+- **Smart Positioning**: Window keeps your preferred dimensions while snapping to edges
 - **Taskbar Aware**: Automatic detection avoids system UI elements
 
 ### Advanced Usage
-- **Press Arrow Again**: Toggle between positions (left ↔ right)
+- **Press Arrow Again**: Move between positions (left ↔ right) while maintaining size
+- **Size Memory**: Window remembers your preferred dimensions for quick positioning
 - **Combine with Features**: Use with "Always On Top" for persistent monitoring
 - **Multi-Screen**: Move window between monitors using standard window dragging
+- **Custom Sizing**: Resize window once, then use arrows to position quickly
 
 ### Theme Support
 - **Automatic**: Keyboard shortcuts work in both light and dark themes
