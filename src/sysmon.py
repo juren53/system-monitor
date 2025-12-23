@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QGroupBox, QFormLayout, QDialogButtonBox)
 from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject
 from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont
+from PyQt5.QtGui import QGuiApplication
 import pyqtgraph as pg
 import psutil
 
@@ -774,6 +775,13 @@ class SystemMonitor(QMainWindow):
         
         help_menu.addSeparator()
         
+        navigation_action = QAction('&Keyboard Shortcuts', self)
+        navigation_action.setStatusTip('View available keyboard shortcuts and navigation')
+        navigation_action.triggered.connect(self.show_keyboard_shortcuts)
+        help_menu.addAction(navigation_action)
+        
+        help_menu.addSeparator()
+        
         about_action = QAction('&About', self)
         about_action.setStatusTip('About SysMon')
         about_action.triggered.connect(self.show_about)
@@ -977,7 +985,65 @@ class SystemMonitor(QMainWindow):
         if hasattr(self, 'process_thread') and self.process_thread:
             self.process_thread.deleteLater()
     
-    # Window Geometry Methods
+    # Keyboard Navigation Methods
+    def keyPressEvent(self, event):
+        """Handle keyboard events for window positioning"""
+        if event.key() == Qt.Key_Left:
+            self.position_window_left()
+        elif event.key() == Qt.Key_Right:
+            self.position_window_right()
+        else:
+            super().keyPressEvent(event)
+    
+    def position_window_left(self):
+        """Position window on left half of current screen"""
+        try:
+            # Get the screen where the window is currently located
+            screen = self.screen()
+            if not screen:
+                # Fallback to primary screen if window is not on any screen
+                screen = QGuiApplication.primaryScreen()
+            
+            # Get available geometry (excluding taskbars, docks, etc.)
+            available = screen.availableGeometry()
+            
+            # Calculate left half of available screen
+            window_width = available.width() // 2
+            window_height = available.height()
+            x_pos = available.x()
+            y_pos = available.y()
+            
+            # Apply new position with current window height
+            self.setGeometry(x_pos, y_pos, window_width, window_height)
+            
+        except Exception as e:
+            print(f"Error positioning window to left: {e}")
+    
+    def position_window_right(self):
+        """Position window on right half of current screen"""
+        try:
+            # Get the screen where the window is currently located
+            screen = self.screen()
+            if not screen:
+                # Fallback to primary screen if window is not on any screen
+                screen = QGuiApplication.primaryScreen()
+            
+            # Get available geometry (excluding taskbars, docks, etc.)
+            available = screen.availableGeometry()
+            
+            # Calculate right half of available screen
+            window_width = available.width() // 2
+            window_height = available.height()
+            x_pos = available.x() + window_width  # Start from middle of available area
+            y_pos = available.y()
+            
+            # Apply new position with current window height
+            self.setGeometry(x_pos, y_pos, window_width, window_height)
+            
+        except Exception as e:
+            print(f"Error positioning window to right: {e}")
+
+# Window Geometry Methods
     def closeEvent(self, event):
         """Handle window close event to save geometry"""
         try:
@@ -1567,6 +1633,103 @@ Please check the docs/users-guide.md file in the SysMon repository."""
         layout.addWidget(text_area)
         
         # Add close button with theme-aware styling
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(close_button)
+        
+        layout.addLayout(button_layout)
+        dialog.setLayout(layout)
+        
+        # Center dialog on screen
+        dialog.setGeometry(
+            dialog.x() + (dialog.width() // 2),
+            dialog.y() + (dialog.height() // 2),
+            dialog.width(),
+            dialog.height()
+        )
+        
+        # Show dialog
+        dialog.exec_()
+    
+    def show_keyboard_shortcuts(self):
+        """Show keyboard shortcuts and navigation help dialog"""
+        # Get theme-appropriate colors
+        theme_colors = self.get_dialog_theme_colors()
+        
+        shortcuts_content = """
+# SysMon Keyboard Shortcuts & Navigation
+
+## Window Positioning Navigation
+**← Left Arrow**  : Position window to left half of current screen
+**→ Right Arrow** : Position window to right half of current screen
+
+## Existing Keyboard Shortcuts
+
+### File Menu
+**Ctrl+S**        : Save current graph data
+**Ctrl+E**        : Export graph as image
+**Ctrl+Q**        : Exit application
+
+### Edit Menu  
+**Ctrl+C**        : Copy graph data to clipboard
+**Ctrl+Del**      : Clear all data and reset graphs
+
+### View Menu
+**F11**           : Toggle fullscreen mode
+**Esc**           : Close active dialog
+
+### Navigation Tips
+- **Arrow Keys** work instantly - no need to drag window manually
+- **Multi-Monitor** support: Arrow keys work on the screen where window is located
+- **Smart Positioning**: Window maintains current height and vertical position
+- **Taskbar Aware**: Automatic detection avoids system UI elements
+
+### Advanced Usage
+- **Press Arrow Again**: Toggle between positions (left ↔ right)
+- **Combine with Features**: Use with "Always On Top" for persistent monitoring
+- **Multi-Screen**: Move window between monitors using standard window dragging
+
+### Theme Support
+- **Automatic**: Keyboard shortcuts work in both light and dark themes
+- **Consistent**: Same shortcuts across all operating systems
+- **Responsive**: No delay in window positioning
+
+---
+
+For detailed feature documentation, see Help → Users Guide
+        """
+        
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("SysMon Keyboard Shortcuts")
+        dialog.setModal(True)
+        dialog.resize(700, 600)
+        
+        layout = QVBoxLayout()
+        
+        # Create text area with shortcuts content using theme-aware styling
+        text_area = QTextEdit()
+        text_area.setReadOnly(True)
+        text_area.setStyleSheet(f"""
+            QTextEdit {{
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                font-size: 13px;
+                line-height: 1.4;
+                background-color: {theme_colors['background']};
+                color: {theme_colors['text']};
+                border: 1px solid #dee2e6;
+                padding: 12px;
+                selection-background-color: {theme_colors['selection_bg']};
+                selection-color: {theme_colors['selection_text']};
+            }}
+        """)
+        text_area.setPlainText(shortcuts_content)
+        layout.addWidget(text_area)
+        
+        # Add close button
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         
