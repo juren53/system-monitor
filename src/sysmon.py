@@ -1230,78 +1230,107 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
         uptime = datetime.datetime.now() - APPLICATION_START_TIME
         uptime_str = str(uptime).split('.')[0]  # Remove microseconds
         
+        # Create custom dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("About SysMon")
+        dialog.setModal(True)
+        dialog.resize(800, 500)  # Wider, more compact size - better for small screens
+        
+        layout = QVBoxLayout()
+        
         about_text = f"""
-        <table style='margin: 10px; border-collapse: collapse; width: 100%;'>
-            <tr><td colspan='2' style='text-align: center; padding: 8px;'>
-                <h3 style='margin: 0; color: #2196F3;'>SysMon - PyQtGraph Edition</h3>
-                <p style='margin: 4px 0; color: #666;'>Real-time system monitoring with PyQtGraph</p>
-            </td></tr>
-            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
+        <div style='font-family: Arial, sans-serif; margin: 15px;'>
+            <div style='text-align: center; margin-bottom: 20px;'>
+                <h2 style='margin: 0; color: #2196F3;'>SysMon - PyQtGraph Edition</h2>
+                <p style='margin: 5px 0; color: #666; font-size: 14px;'>Real-time system monitoring with PyQtGraph</p>
+            </div>
             
-            <!-- Version Information -->
-            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Version:</td>
-                <td style='padding: 4px 8px; color: #555;'>{FULL_VERSION} (Production Release)</td></tr>
-            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Build Date:</td>
-                <td style='padding: 4px 8px; color: #555;'>{BUILD_INFO}</td></tr>
-            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Release Date:</td>
-                <td style='padding: 4px 8px; color: #555;'>{RELEASE_DATE}</td></tr>
-            
-            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
-            
-            <!-- Runtime Information -->
-            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Current Time:</td>
-                <td style='padding: 4px 8px; color: #555;'>{current_time}</td></tr>
-            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Application Uptime:</td>
-                <td style='padding: 4px 8px; color: #555;'>{uptime_str}</td></tr>
-            
-            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
-            
-            <!-- System Information -->
-            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Python Version:</td>
-                <td style='padding: 4px 8px; color: #555;'>{PYTHON_VERSION}</td></tr>
-            <tr><td style='padding: 4px 8px; font-weight: bold; color: #333;'>Platform:</td>
-                <td style='padding: 4px 8px; color: #555;'>{PLATFORM_INFO}</td></tr>
-            
-            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
-            
-            <!-- Features -->
-            <tr><td colspan='2' style='padding: 8px;'>
-                <b style='color: #333;'>Features:</b><br>
-                <span style='color: #555; font-size: 0.9em;'>
-                • CPU, Disk I/O, and Network monitoring<br>
-                • Real-time graphs with smooth performance<br>
-                • Process drill-down information<br>
-                • Window transparency and always-on-top<br>
-                • XDG-compliant configuration<br>
-                • Professional menu system<br>
-                • Automatic system theme detection<br>
-                • Customizable time windows and colors
+            <div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
+                <b style='color: #333;'>Version & Runtime:</b><br>
+                <span style='color: #555;'>
+                {FULL_VERSION} • Built: {BUILD_INFO} • Released: {RELEASE_DATE}<br>
+                Runtime: {uptime_str} • Python {PYTHON_VERSION}
                 </span>
-            </td></tr>
+            </div>
             
-            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
+            <div style='background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
+                <b style='color: #333;'>System:</b><br>
+                <span style='color: #555;'>{PLATFORM_INFO}</span>
+            </div>
             
-            <!-- Libraries -->
-            <tr><td colspan='2' style='padding: 8px;'>
+            <div style='background-color: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
+                <b style='color: #333;'>Core Features:</b><br>
+                <span style='color: #555; font-size: 0.9em;'>
+                • Real-time CPU, Disk I/O, Network monitoring with smooth graphs<br>
+                • Live RAM & Swap memory display with GB formatting<br>
+                • Process drill-down analysis and resource tracking<br>
+                • Window transparency, always-on-top, XDG compliance
+                </span>
+            </div>
+            
+            <div style='background-color: #f3e5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
                 <b style='color: #333;'>Libraries:</b><br>
                 <span style='color: #555; font-size: 0.9em;'>
-                • PyQt5 - GUI Framework<br>
-                • PyQtGraph - High-performance plotting<br>
-                • psutil - System information<br>
-                • Platform detection - Cross-platform support
+                PyQt5 GUI Framework • PyQtGraph Plotting • psutil System Info
                 </span>
-            </td></tr>
+            </div>
             
-            <tr><td colspan='2' style='border-bottom: 1px solid #ddd; padding: 4px 0;'></td></tr>
-            
-            <!-- Author -->
-            <tr><td colspan='2' style='text-align: center; padding: 8px;'>
-                <b style='color: #333;'>Author:</b> System Monitor Project
-            </td></tr>
-        </table>
+            <div style='text-align: center; margin-top: 10px; color: #666; font-size: 0.9em;'>
+                <b>Author:</b> System Monitor Project
+            </div>
+        </div>
         """
         
-        QMessageBox.about(self, "About SysMon", about_text)
+        # Create text area with HTML content
+        text_area = QTextEdit()
+        text_area.setReadOnly(True)
+        text_area.setHtml(about_text)
+        text_area.setStyleSheet("""
+            QTextEdit {
+                border: none;
+                background-color: #ffffff;
+                padding: 0px;
+            }
+        """)
+        layout.addWidget(text_area)
+        
+        # Add close button
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        close_button = QPushButton("Close")
+        close_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+            QPushButton:pressed {
+                background-color: #0D47A1;
+            }
+        """)
+        close_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(close_button)
+        
+        layout.addLayout(button_layout)
+        dialog.setLayout(layout)
+        
+        # Center dialog on screen
+        dialog.setGeometry(
+            dialog.x() + (dialog.width() // 2),
+            dialog.y() + (dialog.height() // 2),
+            dialog.width(),
+            dialog.height()
+        )
+        
+        # Show dialog
+        dialog.exec_()
 
 def set_application_icon(app):
     """Set application icon with proper error handling"""
