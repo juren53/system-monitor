@@ -1,6 +1,43 @@
 # Changelog - sysmon.py
 
-## 2025-12-23 1930 CST - Users Guide Documentation Update  [ v0.2.8 ]
+## 2025-12-23 1052 CST - Enhanced Graph Colors System  [ v0.2.9 ]
+
+### 🎨 **Complete Graph Colors Enhancement**
+- **Multi-Element Customization**: Full control over CPU, Disk Read/Write, Network Send/Receive, Background, and Grid colors
+- **Professional Dialog Interface**: Clean 600x500 modal dialog with intuitive controls
+- **Real-time Preview**: Before/after color comparison with immediate visual feedback
+- **Color History**: Recent colors remembered per graph element
+- **Persistent Configuration**: XDG-compliant preferences saved and loaded automatically
+- **Theme Integration**: Seamless compatibility with existing automatic theme detection
+- **Keyboard Shortcut**: Ctrl+G for quick access to color customization
+
+### 🖥️ **Technical Implementation Highlights**
+- **300+ Lines Added**: Complete rewrite of graph color customization system
+- **10 Helper Methods**: Comprehensive color management functions
+- **Modal Dialog**: Proper `QDialog()` with `setModal(True)` and `exec_()`
+- **Color Application**: Individual plot coloring via `pg.mkPen()` and `setPen()`
+- **Preferences System**: JSON-based configuration with per-element color storage
+- **Error Handling**: Graceful fallbacks and user feedback throughout
+- **Startup Integration**: Auto-load saved colors on application launch
+
+### 🔧 **Color Scheme Preserved**
+- **Default Colors**: Original professional scheme maintained (CPU: #00ff00, Disk: #ff6b6b/#4ecdc4, Network: #ff9ff3/#00bcd4)
+- **Background Control**: Theme-managed backgrounds and grids preserved
+- **Professional Aesthetics**: Maintained existing visual consistency with new customization options
+
+### 🎮 **User Experience Transformation**
+- **From**: Basic CPU-only color picker with no background/grid support
+- **To**: Comprehensive color customization system matching professional application standards
+- **Workflow**: Select element → pick color → preview → apply → save → persist
+- **Accessibility**: 8-element selector with real-time preview for better user experience
+
+### 📝 **Files Modified**
+- **`src/sysmon.py`**: Complete graph colors system rewrite and enhancement
+- **`README.md`**: Version bumped to v0.2.9
+- **`docs/users-guide.md`**: Updated to v0.2.9
+- **`docs/CHANGELOG.md`**: New v0.2.9 changelog entry
+
+---
 
 ### 📚 **Documentation Maintenance**
 - **Version Bump:** Updated from v0.2.7 to v0.2.8 across all documentation

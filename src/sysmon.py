@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.8
-Release: 2025-12-23 1930 CST
+SysMon - PyQtGraph-based System Monitor v0.2.9
+Release: 2025-12-23 1052 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -83,7 +83,7 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.8"
+VERSION = "0.2.9"
 RELEASE_DATE = "2025-12-23"
 RELEASE_TIME = "1930 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
@@ -1381,7 +1381,7 @@ class SystemMonitor(QMainWindow):
         
         # Preview area
         preview_label = QLabel("Preview:")
-        self.preview_label.setStyleSheet("font-weight: bold; margin: 10px 0;")
+        preview_label.setStyleSheet("font-weight: bold; margin: 10px 0;")
         layout.addWidget(preview_label)
         
         # Buttons
@@ -1409,11 +1409,24 @@ class SystemMonitor(QMainWindow):
     
     def select_graph_color(self):
         """Open color picker for selected graph element"""
-        from PyQt5.QtGui import QColorDialog
+        from PyQt5.QtWidgets import QColorDialog
+        from PyQt5.QtGui import QColor
+        
+        # Map display names to internal keys
+        element_map = {
+            "CPU Usage Curve": "cpu",
+            "Disk Read Curve": "disk_read",
+            "Disk Write Curve": "disk_write",
+            "Network Send Curve": "net_sent",
+            "Network Receive Curve": "net_recv",
+            "Background Color": "background",
+            "Grid Color": "grid"
+        }
         
         current_colors = self.get_current_graph_colors()
         selected_element = self.graph_selector.currentText()
-        current_color = current_colors.get(selected_element, '#ffffff')
+        color_key = element_map.get(selected_element)
+        current_color = current_colors.get(color_key, '#ffffff') if color_key else '#ffffff'
         
         # Open color dialog with current color
         color = QColorDialog.getColor(QColor(current_color), self, "Select Color")
