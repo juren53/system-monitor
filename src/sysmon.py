@@ -18,12 +18,12 @@ import time
 from collections import deque
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                             QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
-                             QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
-                             QInputDialog, QColorDialog, QCheckBox, QSpinBox,
-                             QGroupBox, QFormLayout, QDialogButtonBox)
+                              QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
+                              QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
+                              QInputDialog, QColorDialog, QCheckBox, QSpinBox,
+                              QGroupBox, QFormLayout, QDialogButtonBox, QComboBox)
 from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject
-from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont
+from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont, QColor
 from PyQt5.QtGui import QGuiApplication
 import pyqtgraph as pg
 import psutil
@@ -564,6 +564,9 @@ class SystemMonitor(QMainWindow):
         
         # Apply system theme to plots
         self.apply_system_theme_to_plots()
+        
+        # Load saved graph colors preferences
+        self.load_graph_colors_preferences()
         
     def get_dialog_theme_colors(self):
         """Get theme-appropriate colors for dialogs"""
@@ -1309,11 +1312,262 @@ class SystemMonitor(QMainWindow):
             self.save_preferences()
     
     def customize_graph_colors(self):
-        """Customize graph colors"""
-        color = QColorDialog.getColor()
+        """Enhanced graph colors customization with background/grid support"""
+        from PyQt5.QtWidgets import QComboBox, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
+        from PyQt5.QtGui import QColor
+        
+        # Current default colors (preserve existing professional scheme)
+        default_colors = {
+            'cpu': '#00ff00',      # Bright green
+            'disk_read': '#ff6b6b',  # Red
+            'disk_write': '#4ecdc4', # Cyan
+            'net_sent': '#ff9ff3',   # Pink
+            'net_recv': '#00bcd4',   # Blue
+            'background': None,          # Let theme decide
+            'grid': None                # Let theme decide
+        }
+        
+        # Get current colors from plots
+        current_colors = {
+            'cpu': self.cpu_curve.opts['pen'].color().name() if self.cpu_curve else default_colors['cpu'],
+            'disk_read': self.disk_read_curve.opts['pen'].color().name() if self.disk_read_curve else default_colors['disk_read'],
+            'disk_write': self.disk_write_curve.opts['pen'].color().name() if self.disk_write_curve else default_colors['disk_write'],
+            'net_sent': self.net_sent_curve.opts['pen'].color().name() if self.net_sent_curve else default_colors['net_sent'],
+            'net_recv': self.net_recv_curve.opts['pen'].color().name() if self.net_recv_curve else default_colors['net_recv'],
+        }
+        
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Graph Colors")
+        dialog.setModal(True)
+        dialog.resize(600, 500)
+        
+        layout = QVBoxLayout()
+        
+        # Graph selector
+        selector_layout = QHBoxLayout()
+        selector_label = QLabel("Select Element:")
+        self.graph_selector = QComboBox()
+        
+        graph_elements = [
+            "CPU Usage Curve",
+            "Disk Read Curve", 
+            "Disk Write Curve",
+            "Network Send Curve",
+            "Network Receive Curve",
+            "Background Color",
+            "Grid Color"
+        ]
+        self.graph_selector.addItems(graph_elements)
+        
+        selector_layout.addWidget(selector_label)
+        selector_layout.addWidget(self.graph_selector)
+        layout.addLayout(selector_layout)
+        
+        # Color selection
+        color_layout = QHBoxLayout()
+        color_label = QLabel("Choose Color:")
+        self.color_display = QLabel("Current: None")
+        self.color_display.setStyleSheet("border: 1px solid #ccc; padding: 5px; min-width: 100px;")
+        
+        select_button = QPushButton("Select Color")
+        select_button.clicked.connect(self.select_graph_color)
+        
+        color_layout.addWidget(color_label)
+        color_layout.addWidget(self.color_display)
+        color_layout.addWidget(select_button)
+        layout.addLayout(color_layout)
+        
+        # Preview area
+        preview_label = QLabel("Preview:")
+        self.preview_label.setStyleSheet("font-weight: bold; margin: 10px 0;")
+        layout.addWidget(preview_label)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        apply_button = QPushButton("Apply to Selected")
+        apply_button.clicked.connect(self.apply_graph_color)
+        apply_button.setStyleSheet("background-color: #2196F3; color: white; padding: 8px; border: none; font-weight: bold;")
+        
+        reset_button = QPushButton("Reset to Defaults")
+        reset_button.clicked.connect(self.reset_graph_colors)
+        
+        button_layout.addWidget(apply_button)
+        button_layout.addWidget(reset_button)
+        layout.addLayout(button_layout)
+        
+        dialog.setLayout(layout)
+        
+        # Update display initially
+        self.update_graph_color_display()
+        
+        # Show dialog
+        dialog.exec_()
+    
+    def select_graph_color(self):
+        """Open color picker for selected graph element"""
+        from PyQt5.QtGui import QColorDialog
+        
+        current_colors = self.get_current_graph_colors()
+        selected_element = self.graph_selector.currentText()
+        current_color = current_colors.get(selected_element, '#ffffff')
+        
+        # Open color dialog with current color
+        color = QColorDialog.getColor(QColor(current_color), self, "Select Color")
         if color.isValid():
-            # For simplicity, change CPU curve color
-            self.cpu_curve.setPen(pg.mkPen(color=color, width=2))
+            # Update display
+            self.color_display.setText(f"Current: {color.name()}")
+            self.color_display.setStyleSheet(f"background-color: {color.name()}; color: white; padding: 5px; min-width: 100px; font-weight: bold;")
+    
+    def apply_graph_color(self):
+        """Apply selected color to chosen graph element"""
+        selected_element = self.graph_selector.currentText()
+        color_text = self.color_display.text().replace("Current: ", "")
+        
+        if color_text and color_text != "None":
+            from PyQt5.QtGui import QColor
+            color = QColor(color_text)
+            if color.isValid():
+                self.apply_color_to_element(selected_element, color)
+                
+                # Save to preferences
+                self.save_graph_colors_preference(selected_element, color.name())
+    
+    def apply_color_to_element(self, element, color):
+        """Apply color to specific graph element"""
+        color_pen = pg.mkPen(color=color, width=2)
+        
+        if element == "CPU Usage Curve":
+            self.cpu_curve.setPen(color_pen)
+        elif element == "Disk Read Curve":
+            self.disk_read_curve.setPen(color_pen)
+        elif element == "Disk Write Curve":
+            self.disk_write_curve.setPen(color_pen)
+        elif element == "Network Send Curve":
+            self.net_sent_curve.setPen(color_pen)
+        elif element == "Network Receive Curve":
+            self.net_recv_curve.setPen(color_pen)
+        elif element == "Background Color":
+            self.cpu_plot.setBackground(color)
+            self.disk_plot.setBackground(color)
+            self.net_plot.setBackground(color)
+        elif element == "Grid Color":
+            # Apply to all plots
+            for plot in [self.cpu_plot, self.disk_plot, self.net_plot]:
+                plot.showGrid(x=True, y=True, alpha=0.3)
+    
+    def reset_graph_colors(self):
+        """Reset all graph colors to defaults"""
+        default_colors = {
+            'cpu': '#00ff00',      # Bright green
+            'disk_read': '#ff6b6b',  # Red
+            'disk_write': '#4ecdc4', # Cyan
+            'net_sent': '#ff9ff3',   # Pink
+            'net_recv': '#00bcd4',   # Blue
+        }
+        
+        # Apply defaults
+        self.apply_color_to_element("CPU Usage Curve", QColor(default_colors['cpu']))
+        self.apply_color_to_element("Disk Read Curve", QColor(default_colors['disk_read']))
+        self.apply_color_to_element("Disk Write Curve", QColor(default_colors['disk_write']))
+        self.apply_color_to_element("Network Send Curve", QColor(default_colors['net_sent']))
+        self.apply_color_to_element("Network Receive Curve", QColor(default_colors['net_recv']))
+        
+        # Reset background and grid to theme defaults
+        self.apply_system_theme_to_plots()
+    
+    def get_current_graph_colors(self):
+        """Get current colors from all plot elements"""
+        try:
+            colors = {}
+            
+            # Get colors from CPU plot
+            if hasattr(self, 'cpu_curve') and self.cpu_curve:
+                colors['cpu'] = self.cpu_curve.opts['pen'].color().name()
+            
+            # Get colors from Disk plot
+            if hasattr(self, 'disk_read_curve') and self.disk_read_curve:
+                colors['disk_read'] = self.disk_read_curve.opts['pen'].color().name()
+            if hasattr(self, 'disk_write_curve') and self.disk_write_curve:
+                colors['disk_write'] = self.disk_write_curve.opts['pen'].color().name()
+            
+            # Get colors from Network plot
+            if hasattr(self, 'net_sent_curve') and self.net_sent_curve:
+                colors['net_sent'] = self.net_sent_curve.opts['pen'].color().name()
+            if hasattr(self, 'net_recv_curve') and self.net_recv_curve:
+                colors['net_recv'] = self.net_recv_curve.opts['pen'].color().name()
+            
+            return colors
+        except:
+            return {}
+    
+    def save_graph_colors_preference(self, element, color):
+        """Save graph color preference to config"""
+        try:
+            # Load existing preferences
+            preferences = {}
+            if os.path.exists(self.preferences_file):
+                with open(self.preferences_file, 'r') as f:
+                    preferences = json.load(f)
+            
+            # Ensure graph_colors section exists
+            if 'graph_colors' not in preferences:
+                preferences['graph_colors'] = {}
+            
+            # Save the color preference
+            if element and color:
+                preferences['graph_colors'][element] = color
+            
+            # Write back to file
+            with open(self.preferences_file, 'w') as f:
+                json.dump(preferences, f, indent=4)
+            
+        except Exception as e:
+            print(f"Failed to save graph color preference: {e}")
+    
+    def load_graph_colors_preferences(self):
+        """Load saved graph colors and apply them"""
+        try:
+            if os.path.exists(self.preferences_file):
+                with open(self.preferences_file, 'r') as f:
+                    preferences = json.load(f)
+                
+                # Apply saved graph colors
+                if 'graph_colors' in preferences:
+                    saved_colors = preferences['graph_colors']
+                    
+                    # Apply each saved color
+                    for element, color_hex in saved_colors.items():
+                        if color_hex:  # Skip None values
+                            from PyQt5.QtGui import QColor
+                            color = QColor(color_hex)
+                            if color.isValid():
+                                self.apply_color_to_element(element, color)
+                    
+                    print("✅ Loaded saved graph colors preferences")
+                
+        except Exception as e:
+            print(f"Failed to load graph colors preferences: {e}")
+            # Apply default colors on error
+            self.reset_graph_colors()
+    
+    def update_graph_color_display(self):
+        """Update the color display when selection changes"""
+        selected_element = self.graph_selector.currentText()
+        current_colors = self.get_current_graph_colors()
+        current_color = current_colors.get(selected_element, 'None')
+        
+        if current_color == 'None':
+            self.color_display.setText("Current: None (Theme Default)")
+            self.color_display.setStyleSheet("border: 1px solid #ccc; padding: 5px; min-width: 100px; background: #f5f5f5;")
+        else:
+            self.color_display.setText(f"Current: {current_color}")
+            from PyQt5.QtGui import QColor
+            color = QColor(current_color)
+            if color.isValid():
+                self.color_display.setStyleSheet(f"background-color: {current_color}; color: white; padding: 5px; min-width: 100px; font-weight: bold;")
     
     def set_window_transparency(self, transparency):
         """Set window transparency (0.0 to 1.0)"""
