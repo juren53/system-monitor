@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.0
-Release: 2025-12-21
+SysMon - PyQtGraph-based System Monitor v0.2.7
+Release: 2025-12-23 0018 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -13,6 +13,7 @@ import os
 import atexit
 import platform
 import datetime
+import threading
 from collections import deque
 
 def filter_stderr_gdkpixbuf():
@@ -157,8 +158,8 @@ def show_instance_already_running(app):
         time.sleep(0.01)  # Small delay to prevent CPU spinning
 
 # Version Information
-VERSION = "0.2.6"
-RELEASE_DATE = "2025-12-22"
+VERSION = "0.2.7"
+RELEASE_DATE = "2025-12-23"
 FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
 
 # Build Information
@@ -175,8 +176,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
                              QInputDialog, QColorDialog, QCheckBox, QSpinBox,
                              QGroupBox, QFormLayout, QDialogButtonBox)
-from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore
-from PyQt5.QtGui import QKeySequence, QIcon, QPalette
+from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject, QThread, pyqtSignal, QObject
+from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont
 import pyqtgraph as pg
 import psutil
 import time
@@ -227,16 +228,130 @@ def get_preferences_file_path(config_dir):
     """Get preferences file path"""
     return os.path.join(config_dir, 'preferences.json')
 
+class ProcessWorker(QObject):
+    """Worker for async process analysis"""
+    finished = pyqtSignal(list)
+    progress = pyqtSignal(int)
+    error = pyqtSignal(str)
+    
+    def __init__(self, metric_type):
+        super().__init__()
+        self.metric_type = metric_type
+        self._cancelled = False
+        
+    def cancel(self):
+        """Cancel the operation"""
+        self._cancelled = True
+        
+    def run(self):
+        """Run process analysis"""
+        try:
+            processes = []
+            total_checked = 0
+            max_processes = 200  # Limit scan to prevent excessive scanning
+            
+            # Use non-blocking approach for CPU
+            if self.metric_type == 'cpu':
+                # First pass: get basic CPU info without interval
+                for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
+                    if self._cancelled:
+                        return
+                    total_checked += 1
+                    if total_checked > max_processes:
+                        break
+                        
+                    try:
+                        info = proc.info
+                        # Use cached cpu_percent if available, otherwise use current value
+                        cpu_value = info.get('cpu_percent', 0.0)
+                        if cpu_value is None:
+                            cpu_value = 0.0
+                            
+                        processes.append({
+                            'pid': info['pid'],
+                            'name': info['name'],
+                            'cpu_percent': cpu_value
+                        })
+                        
+                        if total_checked % 50 == 0:
+                            self.progress.emit(int((total_checked / min(max_processes, len(list(psutil.process_iter())))) * 100))
+                            
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+            else:
+                # For disk/network, collect more efficiently
+                for proc in psutil.process_iter(['pid', 'name']):
+                    if self._cancelled:
+                        return
+                    total_checked += 1
+                    if total_checked > max_processes:
+                        break
+                        
+                    try:
+                        info = proc.info
+                        
+                        if self.metric_type == 'disk':
+                            try:
+                                io = proc.io_counters()
+                                value = (io.read_bytes + io.write_bytes) / (1024**2)
+                                key = 'disk_mb'
+                                    
+                                processes.append({
+                                    'pid': info['pid'],
+                                    'name': info['name'],
+                                    key: value
+                                })
+                            except (psutil.AccessDenied, AttributeError):
+                                continue
+                        elif self.metric_type == 'network':
+                            try:
+                                connections = proc.connections()
+                                value = len(connections)  # Count network connections
+                                key = 'net_connections'
+                                    
+                                processes.append({
+                                    'pid': info['pid'],
+                                    'name': info['name'],
+                                    key: value
+                                })
+                            except (psutil.AccessDenied, AttributeError):
+                                continue
+                                
+                        if total_checked % 50 == 0:
+                            self.progress.emit(int((total_checked / min(max_processes, len(list(psutil.process_iter())))) * 100))
+                            
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+            
+            # Sort and get top 10
+            if self.metric_type == 'cpu':
+                sort_key = 'cpu_percent'
+            elif self.metric_type == 'disk':
+                sort_key = 'disk_mb'
+            else:  # network
+                sort_key = 'net_connections'
+            top_procs = sorted(processes, key=lambda x: x.get(sort_key, 0), reverse=True)[:10]
+            
+            self.finished.emit(top_procs)
+            
+        except Exception as e:
+            self.error.emit(f"Error analyzing processes: {str(e)}")
+
+
 class ProcessInfoDialog(QDialog):
     """Dialog showing top processes for a metric"""
     def __init__(self, title, processes, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.resize(500, 400)
+        self.resize(550, 400)  # Increased width for better alignment
         
         layout = QVBoxLayout()
         text_edit = QTextEdit()
         text_edit.setReadOnly(True)
+        # Apply monospace font for proper alignment
+        font = QFont("Monospace", 11)
+        font.setFixedPitch(True)
+        text_edit.setFont(font)
         text_edit.setPlainText(processes)
         layout.addWidget(text_edit)
         
@@ -299,6 +414,10 @@ class SystemMonitor(QMainWindow):
         self.prev_disk_io = psutil.disk_io_counters()
         self.prev_net_io = psutil.net_io_counters()
         self.prev_time = time.time()
+        
+        # Async process analysis attributes
+        self.process_worker = None
+        self.process_thread = None
         
         self.setup_ui()
         self.setup_menu_bar()
@@ -736,59 +855,96 @@ class SystemMonitor(QMainWindow):
         self.net_plot.setXRange(-self.time_window, 0)
         
     def show_top_processes(self, metric_type):
-        """Show top processes for the specified metric"""
-        try:
-            processes = []
-            
-            for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
-                try:
-                    info = proc.info
-                    
-                    if metric_type == 'cpu':
-                        value = proc.cpu_percent(interval=0.1)
-                        key = 'cpu_percent'
-                    elif metric_type == 'disk':
-                        io = proc.io_counters()
-                        value = (io.read_bytes + io.write_bytes) / (1024**2)
-                        key = 'disk_mb'
-                    elif metric_type == 'network':
-                        io = proc.io_counters()
-                        value = (io.read_bytes + io.write_bytes) / (1024**2)
-                        key = 'net_mb'
-                    else:
-                        continue
-                    
-                    processes.append({
-                        'pid': info['pid'],
-                        'name': info['name'],
-                        key: value
-                    })
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
-            
-            # Sort and get top 10
-            sort_key = 'cpu_percent' if metric_type == 'cpu' else f'{metric_type}_mb'
-            top_procs = sorted(processes, key=lambda x: x.get(sort_key, 0), reverse=True)[:10]
-            
-            # Format output
-            if metric_type == 'cpu':
-                title = "Top 10 CPU Consumers"
-                header = f"{'PID':<8} {'Name':<30} {'CPU %':>10}\n" + "="*50 + "\n"
-                lines = [f"{p['pid']:<8} {p['name'][:30]:<30} {p['cpu_percent']:>9.1f}%" 
+        """Show top processes for the specified metric with async processing"""
+        # Create progress dialog
+        from PyQt5.QtWidgets import QProgressDialog, QApplication
+        progress = QProgressDialog("Analyzing processes...", "Cancel", 0, 100, self)
+        progress.setWindowTitle("Process Analysis")
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.show()
+        
+        # Create worker and thread
+        self.process_worker = ProcessWorker(metric_type)
+        self.process_thread = QThread()
+        
+        # Move worker to thread
+        self.process_worker.moveToThread(self.process_thread)
+        
+        # Connect signals
+        self.process_worker.finished.connect(self.process_thread.quit)
+        self.process_worker.finished.connect(self.process_worker.deleteLater)
+        self.process_worker.error.connect(self.process_thread.quit)
+        self.process_worker.error.connect(self.process_worker.deleteLater)
+        self.process_worker.progress.connect(progress.setValue)
+        self.process_thread.started.connect(self.process_worker.run)
+        
+        # Handle completion
+        self.process_worker.finished.connect(lambda top_procs: self.on_process_analysis_complete(top_procs, metric_type, progress))
+        self.process_worker.error.connect(lambda error: self.on_process_analysis_error(error, progress))
+        
+        # Handle cancellation
+        progress.canceled.connect(self.cancel_process_analysis)
+        
+        # Start analysis
+        self.process_thread.start()
+        
+        # Keep the event loop responsive
+        QApplication.processEvents()
+    
+    def cancel_process_analysis(self):
+        """Cancel the ongoing process analysis"""
+        if hasattr(self, 'process_worker') and self.process_worker:
+            self.process_worker.cancel()
+        if hasattr(self, 'process_thread') and self.process_thread:
+            self.process_thread.quit()
+            self.process_thread.wait()
+    
+    def on_process_analysis_complete(self, top_procs, metric_type, progress):
+        """Handle completion of process analysis"""
+        progress.close()
+        
+        if not top_procs:
+            QMessageBox.information(self, "No Data", "No process data available.")
+            return
+        
+        # Format output
+        if metric_type == 'cpu':
+            title = "Top 10 CPU Consumers"
+            header = f"{'PID':<8} {'Name':<30} {'CPU %':>12}\n" + "="*52 + "\n"
+            lines = [f"{p['pid']:<8} {p['name'][:30]:<30} {p['cpu_percent']:>11.1f}%" 
+                    for p in top_procs]
+        else:
+            if metric_type == 'disk':
+                title = "Top 10 Disk I/O Processes"
+                sort_key = 'disk_mb'
+                header = f"{'PID':<8} {'Name':<30} {'MB':>12}\n" + "="*52 + "\n"
+                lines = [f"{p['pid']:<8} {p['name'][:30]:<30} {p[sort_key]:>11.2f}" 
                         for p in top_procs]
-            else:
-                title = f"Top 10 {metric_type.title()} I/O Processes"
-                header = f"{'PID':<8} {'Name':<30} {'MB':>10}\n" + "="*50 + "\n"
-                lines = [f"{p['pid']:<8} {p['name'][:30]:<30} {p[sort_key]:>9.2f}" 
+            else:  # network
+                title = "Top 10 Network-Active Processes"
+                sort_key = 'net_connections'
+                header = f"{'PID':<8} {'Name':<30} {'Connections':>12}\n" + "="*52 + "\n"
+                lines = [f"{p['pid']:<8} {p['name'][:30]:<30} {p[sort_key]:>12}" 
                         for p in top_procs]
-            
-            output = header + "\n".join(lines)
-            
-            dialog = ProcessInfoDialog(title, output, self)
-            dialog.exec_()
-            
-        except Exception as e:
-            print(f"Error getting process info: {e}")
+        
+        output = header + "\n".join(lines)
+        
+        dialog = ProcessInfoDialog(title, output, self)
+        dialog.exec_()
+        
+        # Clean up thread
+        if hasattr(self, 'process_thread') and self.process_thread:
+            self.process_thread.deleteLater()
+    
+    def on_process_analysis_error(self, error, progress):
+        """Handle process analysis error"""
+        progress.close()
+        QMessageBox.critical(self, "Error", error)
+        
+        # Clean up thread
+        if hasattr(self, 'process_thread') and self.process_thread:
+            self.process_thread.deleteLater()
     
     # Window Geometry Methods
     def closeEvent(self, event):
