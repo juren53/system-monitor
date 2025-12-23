@@ -82,13 +82,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.7"
+VERSION = "0.2.8"
 RELEASE_DATE = "2025-12-23"
-FULL_VERSION = f"v{VERSION} ({RELEASE_DATE})"
+RELEASE_TIME = "1930 CST"
+FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
-BUILD_DATE = "2025-12-22"
-BUILD_TIME = datetime.datetime.now().strftime("%H:%M:%S")
+BUILD_DATE = "2025-12-23"
+BUILD_TIME = "1930 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
