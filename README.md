@@ -29,11 +29,30 @@ Comprehensive system monitoring application with real-time graphs for CPU, Disk 
 
 ### Install Dependencies
 ```bash
-pip install matplotlib psutil PyQt5
+pip install PyQt5 pyqtgraph psutil
+```
+
+### Alternative: Using Virtual Environment
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install PyQt5 pyqtgraph psutil
+```
+
+### Using requirements.txt
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
 ### Run Application
 ```bash
+# With virtual environment
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3 src/sysmon.py
+
+# Or directly (if dependencies installed globally)
 python3 src/sysmon.py
 ```
 

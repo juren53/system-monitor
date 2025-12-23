@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SysMon
+Comment=Real-time System Monitor
+Exec=/home/jure/Projects/system-monitor/run-sysmon.sh
+Icon=/home/jure/Projects/system-monitor/icons/ICON_SysMon.png
+Terminal=false
+Categories=System;Monitor;
+Keywords=system;monitor;performance;cpu;memory;disk;network;
