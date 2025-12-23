@@ -563,6 +563,29 @@ class SystemMonitor(QMainWindow):
         # Apply system theme to plots
         self.apply_system_theme_to_plots()
         
+    def get_dialog_theme_colors(self):
+        """Get theme-appropriate colors for dialogs"""
+        # Get system palette
+        palette = self.palette()
+        bg_color = palette.color(QPalette.Window)
+        bg_brightness = sum([bg_color.red(), bg_color.green(), bg_color.blue()]) / 3
+        is_dark_theme = bg_brightness < 128
+        
+        if is_dark_theme:
+            return {
+                'background': '#1e1e1e',
+                'text': '#c8c8c8',
+                'selection_bg': '#0078d7',
+                'selection_text': 'white'
+            }
+        else:
+            return {
+                'background': '#f8f9fa', 
+                'text': '#212529',
+                'selection_bg': '#0078d7',
+                'selection_text': 'white'
+            }
+    
     def apply_system_theme_to_plots(self):
         """Apply system theme colors to plots"""
         # Get system palette
@@ -1496,7 +1519,7 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
         dialog.exec_()
     
     def show_users_guide(self):
-        """Show comprehensive users guide dialog"""
+        """Show comprehensive users guide dialog with theme-aware styling"""
         # Try to read the users guide file
         users_guide_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'users-guide.md')
         
@@ -1512,6 +1535,9 @@ Error: {str(e)}
 
 Please check the docs/users-guide.md file in the SysMon repository."""
         
+        # Get theme-appropriate colors
+        theme_colors = self.get_dialog_theme_colors()
+        
         # Create dialog similar to changelog but wider for better readability
         dialog = QDialog(self)
         dialog.setWindowTitle("SysMon Users Guide")
@@ -1520,43 +1546,30 @@ Please check the docs/users-guide.md file in the SysMon repository."""
         
         layout = QVBoxLayout()
         
-        # Create text area with users guide content
+        # Create text area with users guide content using theme-aware styling
         text_area = QTextEdit()
         text_area.setReadOnly(True)
-        text_area.setStyleSheet("""
-            QTextEdit {
-                border: none;
-                background-color: #ffffff;
-                padding: 20px;
-                font-family: 'Courier New', monospace;
-                font-size: 12px;
+        text_area.setStyleSheet(f"""
+            QTextEdit {{
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                font-size: 14px;
                 line-height: 1.4;
-            }
+                background-color: {theme_colors['background']};
+                color: {theme_colors['text']};
+                border: 1px solid #dee2e6;
+                padding: 12px;
+                selection-background-color: {theme_colors['selection_bg']};
+                selection-color: {theme_colors['selection_text']};
+            }}
         """)
         text_area.setPlainText(users_guide_content)
         layout.addWidget(text_area)
         
-        # Add close button
+        # Add close button with theme-aware styling
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         
         close_button = QPushButton("Close")
-        close_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
-            QPushButton:pressed {
-                background-color: #0D47A1;
-            }
-        """)
         close_button.clicked.connect(dialog.accept)
         button_layout.addWidget(close_button)
         
