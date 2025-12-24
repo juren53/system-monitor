@@ -996,6 +996,8 @@ class SystemMonitor(QMainWindow):
             self.position_window_left()
         elif event.key() == Qt.Key_Right:
             self.position_window_right()
+        elif event.key() == Qt.Key_M:
+            self.minimize_window()
         else:
             super().keyPressEvent(event)
     
@@ -1056,6 +1058,13 @@ class SystemMonitor(QMainWindow):
             
         except Exception as e:
             print(f"Error moving window to right: {e}")
+    
+    def minimize_window(self):
+        """Minimize the application window to taskbar"""
+        try:
+            self.showMinimized()
+        except Exception as e:
+            print(f"Error minimizing window: {e}")
 
 # Window Geometry Methods
     def closeEvent(self, event):
@@ -1943,6 +1952,7 @@ Please check the docs/users-guide.md file in the SysMon repository."""
 ## Window Positioning Navigation
 **← Left Arrow**  : Move window to left side of current screen (preserves window size)
 **→ Right Arrow** : Move window to right side of current screen (preserves window size)
+**m Key**         : Minimize application window to taskbar
 
 ## Existing Keyboard Shortcuts
 

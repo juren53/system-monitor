@@ -1,5 +1,31 @@
 # Changelog - sysmon.py
 
+## 2025-12-24 1015 CST - Keyboard Minimize Shortcut  [ v0.2.10 ]
+
+### ⌨️ **New Keyboard Shortcut Feature**
+- **'m' Key Minimize**: Press 'm' to immediately minimize SysMon to taskbar
+- **Consistent Behavior**: Mimics title bar minimize button exactly
+- **No Confirmation**: Immediate action for optimal workflow
+- **Taskbar Restoration**: Click taskbar icon to restore window
+- **Help Dialog Updated**: New shortcut documented in keyboard shortcuts help
+
+### 🎮 **Enhanced User Experience**
+- **Quick Minimize**: Single key press for instant window minimization
+- **Professional Integration**: Follows existing keyboard shortcut patterns
+- **Error Handling**: Graceful exception handling for minimize functionality
+- **Documentation**: Added to comprehensive keyboard shortcuts guide
+
+### 📝 **Files Modified**
+- **`src/sysmon.py`**: Added `minimize_window()` method and updated `keyPressEvent()`
+- **`docs/CHANGELOG.md`**: New v0.2.10 changelog entry
+
+### 🔧 **Technical Implementation**
+- **3 Lines Added**: `minimize_window()` method with error handling
+- **2 Lines Modified**: Extended `keyPressEvent()` to handle Qt.Key_M
+- **Help System**: Updated keyboard shortcuts documentation in help dialog
+
+---
+
 ## 2025-12-23 1052 CST - Enhanced Graph Colors System  [ v0.2.9 ]
 
 ### 🎨 **Complete Graph Colors Enhancement**
