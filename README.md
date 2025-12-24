@@ -4,7 +4,7 @@
 **Release Date:** 2025-12-23
 
 ## Description
-Comprehensive system monitoring application with real-time graphs for CPU, Disk I/O, and Network activity. Built with PyQtGraph for high-performance real-time visualization.
+Comprehensive system monitoring application with real-time graphs for CPU, Disk I/O, and Network activity. Built with PyQtGraph for performance visualization.
 
 ## Features
 - **Real-time monitoring** with smooth scrolling graphs (75-150x faster than matplotlib)
