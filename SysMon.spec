@@ -1,20 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""
-SysMon PyInstaller Specification
-Version: v0.2.5
-Release: 2025-12-22
-"""
+
 
 a = Analysis(
     ['src\\sysmon.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('icons\\ICON_SysMon-t.png', 'icons'),
-        ('icons\\ICON_sysmon.png', 'icons'),
-        ('icons\\ICON_sysmon.ico', 'icons'),
-    ],
-    hiddenimports=['matplotlib.backends.qt_compat'],
+    datas=[],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -43,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='icons\\ICON_SysMon-t.png',
+    icon=['icons\\ICON_SysMon.ico'],
 )

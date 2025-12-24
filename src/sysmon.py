@@ -2069,17 +2069,17 @@ def set_application_icon(app):
                 icon = QIcon(icon_path)
                 if not icon.isNull():
                     app.setWindowIcon(icon)
-                    print(f"✓ Application icon set: {icon_path}")
+                    print(f"+ Application icon set: {icon_path}")
                     return True
                 else:
-                    print(f"⚠ Icon file exists but failed to load: {icon_path}")
+                    print(f"! Icon file exists but failed to load: {icon_path}")
             else:
                 continue
         except Exception as e:
-            print(f"⚠ Icon loading failed for {icon_path}: {e}")
+            print(f"! Icon loading failed for {icon_path}: {e}")
             continue
     
-    print("⚠ No valid application icon found, using system default")
+    print("! No valid application icon found, using system default")
     return False
 
 def main():
