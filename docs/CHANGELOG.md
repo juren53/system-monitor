@@ -1,5 +1,65 @@
 # Changelog - sysmon.py
 
+## 2025-12-25 1445 CST - GitHub-Style Markdown Rendering  [ v0.2.13 ]
+
+### 📄 **Enhanced Help Menu with Markdown Rendering**
+- **GitHub-Style Formatting**: All Help menu dialogs now render markdown files with beautiful GitHub-style HTML
+- **ChangeLog Dialog**: Properly formatted headers, bold text, emojis, and structure
+- **Users Guide Dialog**: Enhanced readability with styled sections, lists, and code blocks
+- **Keyboard Shortcuts Dialog**: Now loads from file with formatted markdown rendering
+- **Theme Awareness**: Automatically adapts to dark/light mode with appropriate colors and syntax highlighting
+
+### 🎨 **Visual Improvements**
+- **Before**: Raw markdown syntax visible (e.g., `# Header`, `**bold**`, `- list item`)
+- **After**: Beautifully rendered HTML with styled headers, bold text, lists, code blocks, and tables
+- **Typography**: System font stack matching GitHub's design (-apple-system, BlinkMacSystemFont, Segoe UI)
+- **Code Blocks**: Syntax highlighting via Pygments with GitHub dark/light themes
+- **Clickable Links**: External links are now clickable in all Help dialogs
+
+### 🔧 **Technical Implementation**
+- **New Helper Methods**:
+  - `is_dark_theme()`: Detects if application is using dark theme (line 829-834)
+  - `render_markdown_to_html()`: Converts markdown to GitHub-style HTML with CSS (line 836-1018)
+- **Markdown Extensions**: fenced_code, tables, nl2br, sane_lists, codehilite, toc
+- **Syntax Highlighting**: Pygments with GitHub themes (github-dark for dark mode, github for light mode)
+- **HTML Rendering**: Upgraded from QTextEdit to QTextBrowser for better HTML support
+
+### 📝 **Updated Help Menu Methods**
+- **`show_changelog()`**: Now renders CHANGELOG.md as HTML (line 2174-2224)
+- **`show_users_guide()`**: Now renders users-guide.md as HTML (line 2335-2381)
+- **`show_keyboard_shortcuts()`**: Loads from file and renders as HTML (line 2389-2434)
+
+### 📚 **New Documentation File**
+- **`docs/keyboard-shortcuts.md`**: Extracted keyboard shortcuts content from embedded string to markdown file
+- **Consistent Format**: All Help content now maintained in markdown files in docs/ directory
+
+### 🔌 **Dependencies Added**
+- **`markdown>=3.4.0`**: Python-Markdown library for markdown to HTML conversion
+- **`pygments>=2.15.0`**: Syntax highlighting for code blocks
+- **Import Updates**: Added QTextBrowser, markdown, and pygments imports to sysmon.py
+
+### 🎯 **GitHub-Style Features**
+- **Headers**: Bold with bottom borders (h1, h2, h3 with proper sizing)
+- **Lists**: Proper indentation and spacing for bulleted and numbered lists
+- **Code**: Inline code with gray background, code blocks with syntax highlighting
+- **Tables**: Bordered cells with alternating row colors and header styling
+- **Blockquotes**: Left border with muted text color
+- **Links**: Blue color with hover underline effect
+
+### 📐 **Code Impact**
+- **Lines Added**: ~195 new lines (render_markdown_to_html method, updated dialogs)
+- **Lines Removed**: ~80 lines (old QTextEdit styling code)
+- **Net Addition**: ~115 lines
+- **Single-File Architecture**: Maintained - all changes in src/sysmon.py
+
+### 💾 **Files Modified**
+- **`requirements.txt`**: Added markdown and pygments dependencies
+- **`src/sysmon.py`**: Added rendering methods, updated Help dialogs, updated imports
+- **`docs/keyboard-shortcuts.md`**: New file with keyboard shortcuts content
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
 ## 2025-12-25 0124 CST - Graph Axis Inversion Persistence  [ v0.2.12 ]
 
 ### 🔄 **Persistent Axis Inversion Feature**

@@ -17,18 +17,21 @@ import threading
 import time
 from collections import deque
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                               QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
-                              QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
-                              QInputDialog, QColorDialog, QCheckBox, QSpinBox,
-                              QGroupBox, QFormLayout, QDialogButtonBox, QComboBox,
-                              QTableWidget, QTableWidgetItem)
+                              QTextBrowser, QMenuBar, QMenu, QAction, QMessageBox,
+                              QFileDialog, QInputDialog, QColorDialog, QCheckBox,
+                              QSpinBox, QGroupBox, QFormLayout, QDialogButtonBox,
+                              QComboBox, QTableWidget, QTableWidgetItem)
 from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont, QColor
 from PyQt5.QtGui import QGuiApplication
 import pyqtgraph as pg
 import psutil
+import markdown
+from markdown.extensions import fenced_code, tables, nl2br, sane_lists
+from pygments.formatters import HtmlFormatter
 
 def filter_stderr_gdkpixbuf():
     """Filter out harmless GdkPixbuf critical warnings on Linux"""
@@ -822,7 +825,198 @@ class SystemMonitor(QMainWindow):
                 'selection_bg': '#0078d7',
                 'selection_text': 'white'
             }
-    
+
+    def is_dark_theme(self):
+        """Check if application is using dark theme"""
+        palette = self.palette()
+        bg_color = palette.color(QPalette.Window)
+        # Consider dark if background lightness < 128
+        return bg_color.lightness() < 128
+
+    def render_markdown_to_html(self, markdown_text):
+        """
+        Convert markdown text to GitHub-style HTML with syntax highlighting
+
+        Args:
+            markdown_text: Raw markdown content as string
+
+        Returns:
+            Fully styled HTML string with CSS
+        """
+        # Get theme colors for styling
+        theme_colors = self.get_dialog_theme_colors()
+
+        # Configure markdown extensions (GitHub-flavored)
+        extensions = [
+            'fenced_code',      # ```code blocks```
+            'tables',           # GitHub markdown tables
+            'nl2br',            # Convert newlines to <br>
+            'sane_lists',       # Better list handling
+            'codehilite',       # Syntax highlighting
+            'toc',              # Table of contents support
+        ]
+
+        # Configure extension settings
+        extension_configs = {
+            'codehilite': {
+                'css_class': 'highlight',
+                'linenums': False,
+                'guess_lang': True
+            }
+        }
+
+        # Convert markdown to HTML
+        md = markdown.Markdown(
+            extensions=extensions,
+            extension_configs=extension_configs
+        )
+        html_content = md.convert(markdown_text)
+
+        # Get Pygments CSS for syntax highlighting
+        formatter = HtmlFormatter(style='github-dark' if self.is_dark_theme() else 'github')
+        pygments_css = formatter.get_style_defs('.highlight')
+
+        # Build complete HTML document with GitHub-style CSS
+        full_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Base styles */
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: {theme_colors['text']};
+            background-color: {theme_colors['background']};
+            padding: 16px;
+            margin: 0;
+        }}
+
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            border-bottom: 1px solid {'#30363d' if self.is_dark_theme() else '#d8dee4'};
+            padding-bottom: 8px;
+        }}
+
+        h1 {{ font-size: 2em; }}
+        h2 {{ font-size: 1.5em; }}
+        h3 {{ font-size: 1.25em; }}
+
+        /* Paragraphs and text */
+        p {{ margin-top: 0; margin-bottom: 16px; }}
+
+        strong {{ font-weight: 600; }}
+        em {{ font-style: italic; }}
+
+        /* Links */
+        a {{
+            color: #58a6ff;
+            text-decoration: none;
+        }}
+        a:hover {{
+            text-decoration: underline;
+        }}
+
+        /* Lists */
+        ul, ol {{
+            margin-top: 0;
+            margin-bottom: 16px;
+            padding-left: 2em;
+        }}
+
+        li {{ margin-top: 0.25em; }}
+
+        /* Code */
+        code {{
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            background-color: {'rgba(110,118,129,0.4)' if self.is_dark_theme() else 'rgba(175,184,193,0.2)'};
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }}
+
+        /* Code blocks */
+        pre {{
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: {'#161b22' if self.is_dark_theme() else '#f6f8fa'};
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }}
+
+        pre code {{
+            display: inline;
+            padding: 0;
+            margin: 0;
+            overflow: visible;
+            line-height: inherit;
+            background-color: transparent;
+            border: 0;
+        }}
+
+        /* Tables */
+        table {{
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin-top: 0;
+            margin-bottom: 16px;
+            width: 100%;
+        }}
+
+        table th {{
+            font-weight: 600;
+            padding: 6px 13px;
+            border: 1px solid {'#30363d' if self.is_dark_theme() else '#d0d7de'};
+            background-color: {'#161b22' if self.is_dark_theme() else '#f6f8fa'};
+        }}
+
+        table td {{
+            padding: 6px 13px;
+            border: 1px solid {'#30363d' if self.is_dark_theme() else '#d0d7de'};
+        }}
+
+        table tr:nth-child(2n) {{
+            background-color: {'#0d1117' if self.is_dark_theme() else '#f6f8fa'};
+        }}
+
+        /* Blockquotes */
+        blockquote {{
+            padding: 0 1em;
+            color: {'#8b949e' if self.is_dark_theme() else '#57606a'};
+            border-left: 0.25em solid {'#30363d' if self.is_dark_theme() else '#d0d7de'};
+            margin: 0 0 16px 0;
+        }}
+
+        /* Horizontal rules */
+        hr {{
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: {'#30363d' if self.is_dark_theme() else '#d0d7de'};
+            border: 0;
+        }}
+
+        /* Pygments syntax highlighting */
+        {pygments_css}
+    </style>
+</head>
+<body>
+{html_content}
+</body>
+</html>
+"""
+
+        return full_html
+
     def apply_system_theme_to_plots(self):
         """Apply system theme colors to plots"""
         # Get system palette
@@ -1978,61 +2172,55 @@ class SystemMonitor(QMainWindow):
     
     # Help Menu Methods
     def show_changelog(self):
-        """Show changelog dialog"""
-        # Try to read the changelog file
+        """Show changelog dialog with rendered markdown"""
         changelog_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'CHANGELOG.md')
-        
+
         try:
             with open(changelog_path, 'r', encoding='utf-8', errors='replace') as f:
-                changelog_content = f.read()
+                markdown_content = f.read()
         except Exception as e:
-            changelog_content = f"""# ChangeLog
+            markdown_content = f"""# ChangeLog
 
 Unable to load CHANGELOG.md file.
 
 Error: {str(e)}
 
 Please check the docs/CHANGELOG.md file in the SysMon repository."""
-        
+
+        # Convert markdown to HTML
+        html_content = self.render_markdown_to_html(markdown_content)
+
         # Create dialog
         dialog = QDialog(self)
         dialog.setWindowTitle("SysMon ChangeLog")
         dialog.setModal(True)
         dialog.resize(900, 700)
-        
-        layout = QVBoxLayout()
-        
-        # Create text area with changelog content
-        text_area = QTextEdit()
-        text_area.setReadOnly(True)
-        text_area.setPlainText(changelog_content)
-        text_area.setStyleSheet("""
-            QTextEdit {
-                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-                font-size: 14px;
-                line-height: 1.4;
-                background-color: #f8f9fa;
-                color: #212529;
-                border: 1px solid #dee2e6;
-                padding: 12px;
-                selection-background-color: #0078d7;
-                selection-color: white;
-            }
-        """)
-        layout.addWidget(text_area)
-        
-        # Buttons
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        
+
+        # Use QTextBrowser instead of QTextEdit for better HTML rendering
+        text_browser = QTextBrowser()
+        text_browser.setReadOnly(True)
+        text_browser.setOpenExternalLinks(True)  # Allow clicking links
+        text_browser.setHtml(html_content)
+
+        # Remove extra stylesheet since HTML has embedded CSS
+        text_browser.setStyleSheet("QTextBrowser { border: none; }")
+
+        # Close button
         close_button = QPushButton("Close")
         close_button.clicked.connect(dialog.accept)
+
+        # Layout
+        layout = QVBoxLayout()
+        layout.addWidget(text_browser)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
         button_layout.addWidget(close_button)
-        
+        button_layout.addStretch()
+
         layout.addLayout(button_layout)
         dialog.setLayout(layout)
-        
-        # Show dialog
+
         dialog.exec_()
     
     def show_about(self):
@@ -2145,72 +2333,51 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
         dialog.exec_()
     
     def show_users_guide(self):
-        """Show comprehensive users guide dialog with theme-aware styling"""
-        # Try to read the users guide file
+        """Show users guide dialog with rendered markdown"""
         users_guide_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'users-guide.md')
-        
+
         try:
             with open(users_guide_path, 'r', encoding='utf-8', errors='replace') as f:
-                users_guide_content = f.read()
+                markdown_content = f.read()
         except Exception as e:
-            users_guide_content = f"""# SysMon Users Guide
+            markdown_content = f"""# SysMon Users Guide
 
 Unable to load users guide file.
 
 Error: {str(e)}
 
 Please check the docs/users-guide.md file in the SysMon repository."""
-        
-        # Get theme-appropriate colors
-        theme_colors = self.get_dialog_theme_colors()
-        
-        # Create dialog similar to changelog but wider for better readability
+
+        # Convert markdown to HTML
+        html_content = self.render_markdown_to_html(markdown_content)
+
+        # Create dialog (same as changelog but larger)
         dialog = QDialog(self)
         dialog.setWindowTitle("SysMon Users Guide")
         dialog.setModal(True)
-        dialog.resize(1000, 750)  # Larger size for comprehensive guide
-        
-        layout = QVBoxLayout()
-        
-        # Create text area with users guide content using theme-aware styling
-        text_area = QTextEdit()
-        text_area.setReadOnly(True)
-        text_area.setStyleSheet(f"""
-            QTextEdit {{
-                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-                font-size: 14px;
-                line-height: 1.4;
-                background-color: {theme_colors['background']};
-                color: {theme_colors['text']};
-                border: 1px solid #dee2e6;
-                padding: 12px;
-                selection-background-color: {theme_colors['selection_bg']};
-                selection-color: {theme_colors['selection_text']};
-            }}
-        """)
-        text_area.setPlainText(users_guide_content)
-        layout.addWidget(text_area)
-        
-        # Add close button with theme-aware styling
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        
+        dialog.resize(1000, 750)
+
+        text_browser = QTextBrowser()
+        text_browser.setReadOnly(True)
+        text_browser.setOpenExternalLinks(True)
+        text_browser.setHtml(html_content)
+        text_browser.setStyleSheet("QTextBrowser { border: none; }")
+
+        # Close button and layout (same as changelog)
         close_button = QPushButton("Close")
         close_button.clicked.connect(dialog.accept)
+
+        layout = QVBoxLayout()
+        layout.addWidget(text_browser)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
         button_layout.addWidget(close_button)
-        
+        button_layout.addStretch()
+
         layout.addLayout(button_layout)
         dialog.setLayout(layout)
-        
-        # Center dialog on screen
-        dialog.setGeometry(
-            dialog.x() + (dialog.width() // 2),
-            dialog.y() + (dialog.height() // 2),
-            dialog.width(),
-            dialog.height()
-        )
-        
-        # Show dialog
+
         dialog.exec_()
     
     def show_realtime_processes(self, metric_type):
@@ -2220,104 +2387,50 @@ Please check the docs/users-guide.md file in the SysMon repository."""
             dialog.exec_()
     
     def show_keyboard_shortcuts(self):
-        """Show keyboard shortcuts and navigation help dialog"""
-        # Get theme-appropriate colors
-        theme_colors = self.get_dialog_theme_colors()
-        
-        shortcuts_content = """
-# SysMon Keyboard Shortcuts & Navigation
+        """Show keyboard shortcuts dialog with rendered markdown"""
+        shortcuts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'keyboard-shortcuts.md')
 
-## Window Positioning Navigation
-**← Left Arrow**  : Move window to left side of current screen (preserves window size)
-**→ Right Arrow** : Move window to right side of current screen (preserves window size)
-**m Key**         : Minimize application window to taskbar
+        try:
+            with open(shortcuts_path, 'r', encoding='utf-8', errors='replace') as f:
+                markdown_content = f.read()
+        except Exception as e:
+            # Fallback to embedded content if file not found
+            markdown_content = f"""# SysMon Keyboard Shortcuts
 
-## Existing Keyboard Shortcuts
+Unable to load keyboard-shortcuts.md file.
 
-### File Menu
-**Ctrl+S**        : Save current graph data
-**Ctrl+E**        : Export graph as image
-**Ctrl+Q**        : Exit application
+Error: {str(e)}"""
 
-### Edit Menu  
-**Ctrl+C**        : Copy graph data to clipboard
-**Ctrl+Del**      : Clear all data and reset graphs
+        # Convert markdown to HTML
+        html_content = self.render_markdown_to_html(markdown_content)
 
-### View Menu
-**F11**           : Toggle fullscreen mode
-**Esc**           : Close active dialog
-
-### Navigation Tips
-- **Arrow Keys** work instantly - no need to drag window manually
-- **Multi-Monitor** support: Arrow keys work on the screen where window is located
-- **Size Preserving**: Window maintains current width and height during movement
-- **Smart Positioning**: Window keeps your preferred dimensions while snapping to edges
-- **Taskbar Aware**: Automatic detection avoids system UI elements
-
-### Advanced Usage
-- **Press Arrow Again**: Move between positions (left ↔ right) while maintaining size
-- **Size Memory**: Window remembers your preferred dimensions for quick positioning
-- **Combine with Features**: Use with "Always On Top" for persistent monitoring
-- **Multi-Screen**: Move window between monitors using standard window dragging
-- **Custom Sizing**: Resize window once, then use arrows to position quickly
-
-### Theme Support
-- **Automatic**: Keyboard shortcuts work in both light and dark themes
-- **Consistent**: Same shortcuts across all operating systems
-- **Responsive**: No delay in window positioning
-
----
-
-For detailed feature documentation, see Help → Users Guide
-        """
-        
         # Create dialog
         dialog = QDialog(self)
         dialog.setWindowTitle("SysMon Keyboard Shortcuts")
         dialog.setModal(True)
-        dialog.resize(700, 600)
-        
-        layout = QVBoxLayout()
-        
-        # Create text area with shortcuts content using theme-aware styling
-        text_area = QTextEdit()
-        text_area.setReadOnly(True)
-        text_area.setStyleSheet(f"""
-            QTextEdit {{
-                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-                font-size: 13px;
-                line-height: 1.4;
-                background-color: {theme_colors['background']};
-                color: {theme_colors['text']};
-                border: 1px solid #dee2e6;
-                padding: 12px;
-                selection-background-color: {theme_colors['selection_bg']};
-                selection-color: {theme_colors['selection_text']};
-            }}
-        """)
-        text_area.setPlainText(shortcuts_content)
-        layout.addWidget(text_area)
-        
-        # Add close button
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        
+        dialog.resize(800, 650)
+
+        text_browser = QTextBrowser()
+        text_browser.setReadOnly(True)
+        text_browser.setOpenExternalLinks(True)
+        text_browser.setHtml(html_content)
+        text_browser.setStyleSheet("QTextBrowser { border: none; }")
+
+        # Close button and layout
         close_button = QPushButton("Close")
         close_button.clicked.connect(dialog.accept)
+
+        layout = QVBoxLayout()
+        layout.addWidget(text_browser)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
         button_layout.addWidget(close_button)
-        
+        button_layout.addStretch()
+
         layout.addLayout(button_layout)
         dialog.setLayout(layout)
-        
-        # Center dialog on screen
-        dialog.setGeometry(
-            dialog.x() + (dialog.width() // 2),
-            dialog.y() + (dialog.height() // 2),
-            dialog.width(),
-            dialog.height()
-        )
-        
-        # Show dialog
+
         dialog.exec_()
     
 def set_application_icon(app):
