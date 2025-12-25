@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.9
-Release: 2025-12-23 1052 CST
+SysMon - PyQtGraph-based System Monitor v0.2.14
+Release: 2025-12-25 0813 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                               QTextBrowser, QMenuBar, QMenu, QAction, QMessageBox,
                               QFileDialog, QInputDialog, QColorDialog, QCheckBox,
                               QSpinBox, QGroupBox, QFormLayout, QDialogButtonBox,
-                              QComboBox, QTableWidget, QTableWidgetItem)
+                              QComboBox, QTableWidget, QTableWidgetItem, QLineEdit)
 from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont, QColor
@@ -88,14 +88,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.12"
+VERSION = "0.2.14"
 RELEASE_DATE = "2025-12-25"
-RELEASE_TIME = "0124 CST"
+RELEASE_TIME = "0813 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
 BUILD_DATE = "2025-12-25"
-BUILD_TIME = "0124 CST"
+BUILD_TIME = "0813 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -256,53 +256,69 @@ class ProcessWorker(QObject):
             processes = []
             total_checked = 0
             max_processes = 200  # Limit scan to prevent excessive scanning
-            
-            # Use non-blocking approach for CPU
+
+            # Use two-pass approach for accurate CPU measurements
             if self.metric_type == 'cpu':
-                # First pass: get basic CPU info without interval
-                for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
-                    if self._cancelled:
-                        return
-                    total_checked += 1
-                    if total_checked > max_processes:
-                        break
-                        
-                    try:
-                        info = proc.info
-                        # Use cached cpu_percent if available, otherwise use current value
-                        cpu_value = info.get('cpu_percent', 0.0)
-                        if cpu_value is None:
-                            cpu_value = 0.0
-                            
-                        processes.append({
-                            'pid': info['pid'],
-                            'name': info['name'],
-                            'cpu_percent': cpu_value
-                        })
-                        
-                        if total_checked % 50 == 0:
-                            self.progress.emit(int((total_checked / min(max_processes, len(list(psutil.process_iter())))) * 100))
-                            
-                    except (psutil.NoSuchProcess, psutil.AccessDenied):
-                        continue
-            else:
-                # For disk/network, collect more efficiently
+                # First pass: collect ALL processes and initialize cpu_percent()
+                # NOTE: We must collect all processes, not just first 200, to avoid missing
+                # high-PID processes like Python, Chrome, etc.
+                procs_list = []
                 for proc in psutil.process_iter(['pid', 'name']):
                     if self._cancelled:
                         return
                     total_checked += 1
-                    if total_checked > max_processes:
-                        break
-                        
+
+                    try:
+                        # Initialize cpu_percent (first call returns 0.0)
+                        proc.cpu_percent()
+                        procs_list.append(proc)
+
+                        if total_checked % 100 == 0:
+                            self.progress.emit(min(50, int((total_checked / 500) * 50)))  # 0-50% for first pass
+
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+
+                # Wait 0.5 seconds for CPU measurement
+                time.sleep(0.5)
+
+                # Second pass: get actual CPU and memory percentages
+                for idx, proc in enumerate(procs_list):
+                    if self._cancelled:
+                        return
+
+                    try:
+                        cpu_value = proc.cpu_percent()  # Second call returns actual percentage
+                        memory_value = proc.memory_percent()
+
+                        processes.append({
+                            'pid': proc.info['pid'],
+                            'name': proc.info['name'],
+                            'cpu_percent': cpu_value,
+                            'memory_percent': memory_value
+                        })
+
+                        if idx % 50 == 0:
+                            self.progress.emit(50 + int((idx / len(procs_list)) * 50))  # 50-100% for second pass
+
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+            else:
+                # For disk/network, collect ALL processes (same as CPU)
+                for proc in psutil.process_iter(['pid', 'name']):
+                    if self._cancelled:
+                        return
+                    total_checked += 1
+
                     try:
                         info = proc.info
-                        
+
                         if self.metric_type == 'disk':
                             try:
                                 io = proc.io_counters()
                                 value = (io.read_bytes + io.write_bytes) / (1024**2)
                                 key = 'disk_mb'
-                                    
+
                                 processes.append({
                                     'pid': info['pid'],
                                     'name': info['name'],
@@ -315,7 +331,7 @@ class ProcessWorker(QObject):
                                 connections = proc.connections()
                                 value = len(connections)  # Count network connections
                                 key = 'net_connections'
-                                    
+
                                 processes.append({
                                     'pid': info['pid'],
                                     'name': info['name'],
@@ -323,9 +339,9 @@ class ProcessWorker(QObject):
                                 })
                             except (psutil.AccessDenied, AttributeError):
                                 continue
-                                
-                        if total_checked % 50 == 0:
-                            self.progress.emit(int((total_checked / min(max_processes, len(list(psutil.process_iter())))) * 100))
+
+                        if total_checked % 100 == 0:
+                            self.progress.emit(min(100, int((total_checked / 500) * 100)))
                             
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         continue
@@ -375,21 +391,24 @@ class RealTimeProcessDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Real-Time Top 10 CPU Processes")
         self.resize(550, 400)
-        
+
+        # Update interval in milliseconds (default 3 seconds)
+        self.update_interval = 3000
+
         # Timer for real-time updates
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.refresh_data)
-        
+
         # Background threading
         self.process_thread = None
         self.process_worker = None
-        
+
         # Setup UI
         self.setup_ui()
-        
+
         # Position dialog intelligently
         self.position_dialog_intelligently()
-        
+
         # Start real-time updates
         self.start_real_time_updates()
     
@@ -399,38 +418,70 @@ class RealTimeProcessDialog(QDialog):
         
         # Status indicator and controls
         control_layout = QHBoxLayout()
-        
+
         # Status label
-        self.status_label = QLabel("🟢 Auto-updating every 1 second")
+        self.status_label = QLabel(f"🟢 Auto-updating every {self.update_interval / 1000:.0f} seconds")
         self.status_label.setStyleSheet("QLabel { font-weight: bold; color: #4CAF50; }")
         control_layout.addWidget(self.status_label)
-        
+
         control_layout.addStretch()
-        
+
+        # Update interval controls
+        interval_label = QLabel("Update every:")
+        control_layout.addWidget(interval_label)
+
+        self.interval_spinbox = QSpinBox()
+        self.interval_spinbox.setMinimum(1)
+        self.interval_spinbox.setMaximum(60)
+        self.interval_spinbox.setValue(int(self.update_interval / 1000))
+        self.interval_spinbox.setSuffix(" sec")
+        self.interval_spinbox.valueChanged.connect(self.change_update_interval)
+        control_layout.addWidget(self.interval_spinbox)
+
         # Pause/Resume button
         self.pause_btn = QPushButton("Pause")
         self.pause_btn.clicked.connect(self.toggle_pause)
         control_layout.addWidget(self.pause_btn)
-        
+
         # Refresh button
         refresh_btn = QPushButton("Refresh Now")
         refresh_btn.clicked.connect(self.refresh_data)
         control_layout.addWidget(refresh_btn)
         
         layout.addLayout(control_layout)
-        
+
+        # Filter text box
+        filter_layout = QHBoxLayout()
+        filter_label = QLabel("Filter:")
+        filter_layout.addWidget(filter_label)
+
+        self.filter_box = QLineEdit()
+        self.filter_box.setPlaceholderText("Type to filter processes by name or PID...")
+        self.filter_box.textChanged.connect(self.apply_filter)
+        filter_layout.addWidget(self.filter_box)
+
+        clear_filter_btn = QPushButton("Clear")
+        clear_filter_btn.clicked.connect(lambda: self.filter_box.clear())
+        filter_layout.addWidget(clear_filter_btn)
+
+        layout.addLayout(filter_layout)
+
         # Table widget for process data
         self.table_widget = QTableWidget()
-        self.table_widget.setColumnCount(3)
-        self.table_widget.setHorizontalHeaderLabels(["PID", "Process Name", "CPU %"])
-        
+        self.table_widget.setColumnCount(4)
+        self.table_widget.setHorizontalHeaderLabels(["PID", "Process Name", "CPU %", "Memory %"])
+
         # Set column widths
         self.table_widget.setColumnWidth(0, 80)   # PID
-        self.table_widget.setColumnWidth(1, 300)  # Process Name
+        self.table_widget.setColumnWidth(1, 240)  # Process Name (reduced to fit memory column)
         self.table_widget.setColumnWidth(2, 100)  # CPU %
-        
+        self.table_widget.setColumnWidth(3, 100)  # Memory %
+
         # Make table rows non-editable
         self.table_widget.setEditTriggers(QTableWidget.NoEditTriggers)
+
+        # Enable sorting by clicking column headers
+        self.table_widget.setSortingEnabled(True)
         
         # Sort by CPU descending - data will be pre-sorted
         
@@ -491,17 +542,17 @@ class RealTimeProcessDialog(QDialog):
     
     def start_real_time_updates(self):
         """Start real-time data updates"""
-        self.update_timer.start(1000)  # 1 second interval
+        self.update_timer.start(self.update_interval)
         self.is_paused = False
-    
+
     def toggle_pause(self):
         """Toggle between pause and resume"""
         if self.is_paused:
             # Resume updates
-            self.update_timer.start(1000)
+            self.update_timer.start(self.update_interval)
             self.is_paused = False
             self.pause_btn.setText("Pause")
-            self.status_label.setText("🟢 Auto-updating every 1 second")
+            self.status_label.setText(f"🟢 Auto-updating every {self.update_interval / 1000:.0f} seconds")
             self.status_label.setStyleSheet("QLabel { font-weight: bold; color: #4CAF50; }")
         else:
             # Pause updates
@@ -510,6 +561,19 @@ class RealTimeProcessDialog(QDialog):
             self.pause_btn.setText("Resume")
             self.status_label.setText("🟡 Updates paused")
             self.status_label.setStyleSheet("QLabel { font-weight: bold; color: #FF9800; }")
+
+    def change_update_interval(self, value):
+        """Change the update interval based on spinbox value"""
+        self.update_interval = value * 1000  # Convert seconds to milliseconds
+
+        # Update status label
+        if not self.is_paused:
+            self.status_label.setText(f"🟢 Auto-updating every {value} seconds")
+
+        # Restart timer with new interval if not paused
+        if not self.is_paused:
+            self.update_timer.stop()
+            self.update_timer.start(self.update_interval)
     
     def refresh_data(self):
         """Refresh process data in background thread"""
@@ -545,34 +609,46 @@ class RealTimeProcessDialog(QDialog):
             pid_item = QTableWidgetItem(str(proc['pid']))
             pid_item.setFont(QFont("Arial", 10))
             self.table_widget.setItem(row, 0, pid_item)
-            
+
             # Process Name
-            name_item = QTableWidgetItem(proc['name'][:30])  # Limit to 30 chars
+            name_item = QTableWidgetItem(proc['name'][:25])  # Limit to 25 chars (reduced for memory column)
             name_item.setFont(QFont("Arial", 10))
             self.table_widget.setItem(row, 1, name_item)
-            
-            # CPU % with color coding
+
+            # CPU %
             cpu_percent = proc['cpu_percent']
             cpu_item = QTableWidgetItem(f"{cpu_percent:.1f}%")
-            cpu_item.setFont(QFont("Arial", 10, QFont.Bold))
-            self.apply_color_coding(cpu_item, cpu_percent)
+            cpu_item.setFont(QFont("Arial", 10))
             self.table_widget.setItem(row, 2, cpu_item)
-    
-    def apply_color_coding(self, item, cpu_percent):
-        """Apply color coding based on CPU usage level"""
-        if cpu_percent >= 80:
-            # High usage - Red background
-            item.setBackground(QColor('#ffebee'))  # Light red
-            item.setForeground(QColor('#c62828'))  # Dark red text
-        elif cpu_percent >= 50:
-            # Medium usage - Yellow background  
-            item.setBackground(QColor('#fff9c4'))  # Light yellow
-            item.setForeground(QColor('#f57c00'))  # Orange text
-        else:
-            # Normal usage - Green background
-            item.setBackground(QColor('#e8f5e8'))  # Light green
-            item.setForeground(QColor('#2e7d32'))  # Dark green text
-    
+
+            # Memory %
+            memory_percent = proc.get('memory_percent', 0.0)
+            memory_item = QTableWidgetItem(f"{memory_percent:.1f}%")
+            memory_item.setFont(QFont("Arial", 10))
+            self.table_widget.setItem(row, 3, memory_item)
+
+    def apply_filter(self):
+        """Filter table rows based on search text"""
+        filter_text = self.filter_box.text().lower()
+
+        for row in range(self.table_widget.rowCount()):
+            # Get PID and process name from the row
+            pid_item = self.table_widget.item(row, 0)
+            name_item = self.table_widget.item(row, 1)
+
+            if pid_item and name_item:
+                pid_text = pid_item.text().lower()
+                name_text = name_item.text().lower()
+
+                # Show row if filter text matches PID or name
+                if filter_text in pid_text or filter_text in name_text:
+                    self.table_widget.setRowHidden(row, False)
+                else:
+                    self.table_widget.setRowHidden(row, True)
+            else:
+                # Show row if items don't exist (shouldn't happen, but be safe)
+                self.table_widget.setRowHidden(row, False)
+
     def closeEvent(self, a0):
         """Clean up resources when dialog is closed"""
         # Stop timer

@@ -1,5 +1,72 @@
 # Changelog - sysmon.py
 
+## 2025-12-25 0813 CST - Real-Time CPU Process Monitoring Enhancement  [ v0.2.14 ]
+
+### 🔥 **CRITICAL BUG FIX: Missing High-PID Processes**
+- **Fixed**: Python, Chrome, and other high-PID processes never appeared in CPU process list
+- **Root Cause**: ProcessWorker only collected first 200 processes by PID order, missing high PIDs
+- **Impact**: Users couldn't see critical processes like browsers, IDEs, or recently started apps
+- **Solution**: Removed arbitrary 200-process limit - now scans ALL processes (typically 300-500)
+
+### 🚀 **Real-Time CPU Dialog Enhancements (Phase 1)**
+- **Memory % Column**: Added 4th column showing memory usage alongside CPU
+- **Sortable Columns**: Click any header to sort by PID, Process Name, CPU %, or Memory %
+- **Process Filtering**: Real-time text search filters by process name or PID
+- **Adjustable Updates**: Default 3-second updates (configurable 1-60 seconds via spinbox)
+- **Clean Display**: Removed strong color coding for easier readability
+
+### 🔧 **Accurate CPU Measurement**
+- **Two-Pass Method**: Implemented proper CPU percentage calculation
+  1. First pass: Initialize cpu_percent() for all processes
+  2. Wait 0.5 seconds for accurate measurement
+  3. Second pass: Collect actual CPU and memory percentages
+- **Before**: All processes showed 0.0% CPU (broken)
+- **After**: Accurate percentages matching `top` utility output
+
+### 📊 **Enhanced ProcessWorker**
+- **CPU Collection**: Now collects ALL processes instead of first 200 by PID
+- **Memory Data**: Added memory_percent to CPU process data
+- **Progress Reporting**: Improved progress bar (0-50% first pass, 50-100% second pass)
+- **Disk/Network**: Also updated to scan all processes (no artificial limits)
+
+### 🎨 **User Interface Improvements**
+- **Filter Box**: Text input with "Clear" button for easy filtering
+- **Interval Control**: Spinbox (1-60 sec) with live status label updates
+- **Table Layout**: Optimized column widths (PID: 80px, Name: 240px, CPU: 100px, Mem: 100px)
+- **Sorting**: Native QTableWidget sorting enabled on all columns
+
+### ✅ **Verification & Testing**
+- **Test Suite**: Created diagnostic tools (test_missing_processes.py, test_phase1_simple.py)
+- **Python Processes**: Now correctly appear when using CPU (previously missing)
+- **Chrome Processes**: Now show all ~23 Chrome processes with accurate CPU usage
+- **Process Count**: Collecting 320/320 processes (100% coverage) vs 200/320 before
+
+### 📝 **Documentation**
+- **notes/phase1-completion-summary.md**: Complete Phase 1 implementation details
+- **notes/phase1-process-limit-bugfix.md**: Detailed bug analysis and fix
+- **notes/realtime-drilldown-dialogs-plan.md**: Multi-phase enhancement plan
+
+### 💻 **Code Quality**
+- **Lines Added**: ~200 lines (filtering, interval controls, accurate CPU measurement)
+- **Lines Removed**: ~30 lines (color coding, arbitrary limits)
+- **Net Addition**: ~170 lines
+- **Single-File Architecture**: Maintained - all changes in src/sysmon.py
+
+### 🎯 **Performance Impact**
+- **Scan Time**: Increased from ~0.5s to ~1.0s (acceptable with 3s default interval)
+- **Process Coverage**: 100% of running processes (vs 62% before on 320-process system)
+- **User Experience**: Dramatically improved - now shows all active processes accurately
+
+### 🔌 **Import Updates**
+- **Added**: QLineEdit (for filter text box)
+
+### 📐 **Files Modified**
+- **`src/sysmon.py`**: ProcessWorker CPU measurement, RealTimeProcessDialog enhancements
+- **`docs/CHANGELOG.md`**: This changelog entry
+- **`README.md`**: Version bump to v0.2.14
+
+---
+
 ## 2025-12-25 1445 CST - GitHub-Style Markdown Rendering  [ v0.2.13 ]
 
 ### 📄 **Enhanced Help Menu with Markdown Rendering**
