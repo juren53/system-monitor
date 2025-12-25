@@ -1,5 +1,48 @@
 # Changelog - sysmon.py
 
+## 2025-12-25 0909 CST - Complete Real-Time Drill-Down Dialogs (Phases 2 & 3)  [ v0.2.15 ]
+
+### 🎉 **ALL THREE REAL-TIME MONITORING DIALOGS COMPLETE**
+- **Phase 2**: Real-Time Disk I/O Dialog (NEW)
+- **Phase 3**: Real-Time Network Dialog (NEW)
+- **Combined**: Professional-grade real-time monitoring for CPU, Disk I/O, and Network
+
+### 📊 **Phase 2: Real-Time Disk I/O Dialog (NEW)**
+- **RealTimeDiskDialog**: 5 columns (PID, Name, Read MB/s, Write MB/s, Total MB)
+- **DiskIOWorker**: Delta-based rate calculation with state persistence
+- **Real-Time Rates**: Shows instantaneous read/write speeds updated every 3s
+- **Smart Filtering**: Only displays processes with I/O activity > 0.01 MB
+- **Cross-Platform**: Works on Linux, Windows, macOS
+
+### 🌐 **Phase 3: Real-Time Network Dialog (NEW)**
+- **RealTimeNetworkDialog**: 6 columns (PID, Name, Total, TCP, UDP, ESTABLISHED)
+- **NetworkWorker**: Connection enumeration with protocol/state breakdown
+- **Protocol Analysis**: Separates TCP vs UDP, tracks ESTABLISHED connections
+- **Real-Time Updates**: Current network activity updated every 3s
+- **Cross-Platform**: Universal support via psutil
+
+### 🎨 **Unified Features (All 3 Dialogs)**
+- Real-time updates (3s default, 1-60s configurable)
+- Sortable columns (click headers)
+- Process filtering (text search by name/PID)
+- Pause/Resume controls
+- Intelligent positioning
+- Clean, consistent styling
+
+### 💻 **Code Impact**
+- **Lines Added**: ~740 lines (Phases 2 & 3 combined)
+- **New Classes**: RealTimeDiskDialog, DiskIOWorker, RealTimeNetworkDialog, NetworkWorker
+- **New Methods**: show_realtime_disk(), show_realtime_network()
+- **Updated Handlers**: Disk and Network plot double-click handlers
+- **Single-File Architecture**: Maintained
+
+### 📈 **Testing**
+- Created test_disk_io_worker.py: ✅ Delta calculations accurate
+- Created test_network_worker.py: ✅ Connection tracking correct
+- All test suites passing
+
+---
+
 ## 2025-12-25 0813 CST - Real-Time CPU Process Monitoring Enhancement  [ v0.2.14 ]
 
 ### 🔥 **CRITICAL BUG FIX: Missing High-PID Processes**
