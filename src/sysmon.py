@@ -21,8 +21,10 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                               QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
                               QMenuBar, QMenu, QAction, QMessageBox, QFileDialog,
                               QInputDialog, QColorDialog, QCheckBox, QSpinBox,
-                              QGroupBox, QFormLayout, QDialogButtonBox, QComboBox)
+                              QGroupBox, QFormLayout, QDialogButtonBox, QComboBox,
+                              QTableWidget, QTableWidgetItem)
 from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject
+from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont, QColor
 from PyQt5.QtGui import QGuiApplication
 import pyqtgraph as pg
@@ -363,6 +365,225 @@ class ProcessInfoDialog(QDialog):
         
         self.setLayout(layout)
 
+
+class RealTimeProcessDialog(QDialog):
+    """Real-time dynamic top processes dialog"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Real-Time Top 10 CPU Processes")
+        self.resize(550, 400)
+        
+        # Timer for real-time updates
+        self.update_timer = QTimer()
+        self.update_timer.timeout.connect(self.refresh_data)
+        
+        # Background threading
+        self.process_thread = None
+        self.process_worker = None
+        
+        # Setup UI
+        self.setup_ui()
+        
+        # Position dialog intelligently
+        self.position_dialog_intelligently()
+        
+        # Start real-time updates
+        self.start_real_time_updates()
+    
+    def setup_ui(self):
+        """Setup the dialog UI components"""
+        layout = QVBoxLayout()
+        
+        # Status indicator and controls
+        control_layout = QHBoxLayout()
+        
+        # Status label
+        self.status_label = QLabel("🟢 Auto-updating every 1 second")
+        self.status_label.setStyleSheet("QLabel { font-weight: bold; color: #4CAF50; }")
+        control_layout.addWidget(self.status_label)
+        
+        control_layout.addStretch()
+        
+        # Pause/Resume button
+        self.pause_btn = QPushButton("Pause")
+        self.pause_btn.clicked.connect(self.toggle_pause)
+        control_layout.addWidget(self.pause_btn)
+        
+        # Refresh button
+        refresh_btn = QPushButton("Refresh Now")
+        refresh_btn.clicked.connect(self.refresh_data)
+        control_layout.addWidget(refresh_btn)
+        
+        layout.addLayout(control_layout)
+        
+        # Table widget for process data
+        self.table_widget = QTableWidget()
+        self.table_widget.setColumnCount(3)
+        self.table_widget.setHorizontalHeaderLabels(["PID", "Process Name", "CPU %"])
+        
+        # Set column widths
+        self.table_widget.setColumnWidth(0, 80)   # PID
+        self.table_widget.setColumnWidth(1, 300)  # Process Name
+        self.table_widget.setColumnWidth(2, 100)  # CPU %
+        
+        # Make table rows non-editable
+        self.table_widget.setEditTriggers(QTableWidget.NoEditTriggers)
+        
+        # Sort by CPU descending - data will be pre-sorted
+        
+        layout.addWidget(self.table_widget)
+        
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.close)
+        layout.addWidget(close_btn)
+        
+        self.setLayout(layout)
+    
+    def position_dialog_intelligently(self):
+        """Position dialog to avoid covering main window"""
+        main_window = self.parent()
+        
+        # Dialog dimensions
+        dialog_width = 550
+        dialog_height = 400
+        
+        if main_window:
+            try:
+                # Get main window geometry safely
+                main_rect = main_window.frameGeometry()
+                screen = QGuiApplication.screenAt(main_rect.center())
+                if not screen:
+                    screen = QGuiApplication.primaryScreen()
+                
+                if screen:
+                    available = screen.availableGeometry()
+                    
+                    # Try to position to the right of main window
+                    right_x = main_rect.right() + 20  # 20px gap
+                    if right_x + dialog_width <= available.right():
+                        x_pos = right_x
+                        y_pos = main_rect.top()
+                    else:
+                        # Fall back to below main window
+                        x_pos = main_rect.left()
+                        y_pos = main_rect.bottom() + 20
+                        # Ensure dialog fits on screen vertically
+                        if y_pos + dialog_height > available.bottom():
+                            y_pos = available.bottom() - dialog_height - 20
+                    
+                    self.move(x_pos, y_pos)
+                    return
+            except:
+                pass
+        
+        # Fallback to screen center
+        if QGuiApplication.primaryScreen():
+            screen_rect = QGuiApplication.primaryScreen().availableGeometry()
+            x_pos = screen_rect.left() + (screen_rect.width() - dialog_width) // 2
+            y_pos = screen_rect.top() + (screen_rect.height() - dialog_height) // 2
+            self.move(x_pos, y_pos)
+        
+        self.resize(dialog_width, dialog_height)
+    
+    def start_real_time_updates(self):
+        """Start real-time data updates"""
+        self.update_timer.start(1000)  # 1 second interval
+        self.is_paused = False
+    
+    def toggle_pause(self):
+        """Toggle between pause and resume"""
+        if self.is_paused:
+            # Resume updates
+            self.update_timer.start(1000)
+            self.is_paused = False
+            self.pause_btn.setText("Pause")
+            self.status_label.setText("🟢 Auto-updating every 1 second")
+            self.status_label.setStyleSheet("QLabel { font-weight: bold; color: #4CAF50; }")
+        else:
+            # Pause updates
+            self.update_timer.stop()
+            self.is_paused = True
+            self.pause_btn.setText("Resume")
+            self.status_label.setText("🟡 Updates paused")
+            self.status_label.setStyleSheet("QLabel { font-weight: bold; color: #FF9800; }")
+    
+    def refresh_data(self):
+        """Refresh process data in background thread"""
+        # Clean up previous thread if exists
+        if self.process_thread and self.process_thread.isRunning():
+            self.process_thread.quit()
+            self.process_thread.wait()
+        
+        # Start new thread for data collection
+        self.process_thread = QThread()
+        self.process_worker = ProcessWorker('cpu')
+        self.process_worker.moveToThread(self.process_thread)
+        
+        # Connect signals
+        self.process_worker.finished.connect(self.update_table)
+        self.process_thread.started.connect(self.process_worker.run)
+        
+        self.process_thread.start()
+    
+    def update_table(self, processes, metric_type=None):
+        """Update table with new process data"""
+        if not processes:
+            return
+        
+        # Clear existing data
+        self.table_widget.setRowCount(0)
+        
+        # Add new data
+        self.table_widget.setRowCount(len(processes))
+        
+        for row, proc in enumerate(processes):
+            # PID
+            pid_item = QTableWidgetItem(str(proc['pid']))
+            pid_item.setFont(QFont("Arial", 10))
+            self.table_widget.setItem(row, 0, pid_item)
+            
+            # Process Name
+            name_item = QTableWidgetItem(proc['name'][:30])  # Limit to 30 chars
+            name_item.setFont(QFont("Arial", 10))
+            self.table_widget.setItem(row, 1, name_item)
+            
+            # CPU % with color coding
+            cpu_percent = proc['cpu_percent']
+            cpu_item = QTableWidgetItem(f"{cpu_percent:.1f}%")
+            cpu_item.setFont(QFont("Arial", 10, QFont.Bold))
+            self.apply_color_coding(cpu_item, cpu_percent)
+            self.table_widget.setItem(row, 2, cpu_item)
+    
+    def apply_color_coding(self, item, cpu_percent):
+        """Apply color coding based on CPU usage level"""
+        if cpu_percent >= 80:
+            # High usage - Red background
+            item.setBackground(QColor('#ffebee'))  # Light red
+            item.setForeground(QColor('#c62828'))  # Dark red text
+        elif cpu_percent >= 50:
+            # Medium usage - Yellow background  
+            item.setBackground(QColor('#fff9c4'))  # Light yellow
+            item.setForeground(QColor('#f57c00'))  # Orange text
+        else:
+            # Normal usage - Green background
+            item.setBackground(QColor('#e8f5e8'))  # Light green
+            item.setForeground(QColor('#2e7d32'))  # Dark green text
+    
+    def closeEvent(self, a0):
+        """Clean up resources when dialog is closed"""
+        # Stop timer
+        if self.update_timer:
+            self.update_timer.stop()
+        
+        # Clean up thread
+        if self.process_thread and self.process_thread.isRunning():
+            self.process_thread.quit()
+            self.process_thread.wait()
+        
+        # Accept the close event
+        a0.accept()
+
 class SystemMonitor(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -491,13 +712,13 @@ class SystemMonitor(QMainWindow):
         # Memory info panel
         memory_layout = QHBoxLayout()
         
-        self.ram_label = QLabel("Ram: --/--/--")
+        self.ram_label = QLabel("Memory Usage: --% (--GB / --GB)")
         self.ram_label.setStyleSheet("QLabel { font-weight: bold; color: #2196F3; }")
         memory_layout.addWidget(self.ram_label)
         
         memory_layout.addStretch()
         
-        self.swap_label = QLabel("Swap: --/--/--")
+        self.swap_label = QLabel("Swap Usage: --% (--GB / --GB)")
         self.swap_label.setStyleSheet("QLabel { font-weight: bold; color: #FF9800; }")
         memory_layout.addWidget(self.swap_label)
         
@@ -512,16 +733,18 @@ class SystemMonitor(QMainWindow):
         self.cpu_plot.setLabel('left', 'Usage', units='%')
         self.cpu_plot.setLabel('bottom', 'Time', units='s')
         self.cpu_plot.setYRange(0, 100)
+        self.cpu_plot.setXRange(-self.time_window, 0)
         self.cpu_plot.showGrid(x=True, y=True, alpha=0.3)
         self.cpu_curve = self.cpu_plot.plot(pen=pg.mkPen(color='#00ff00', width=2))
         self.cpu_plot.scene().sigMouseClicked.connect(
-            lambda evt: self.show_top_processes('cpu') if evt.double() else None)
+            lambda evt: self.show_realtime_processes('cpu') if evt.double() else None)
         main_layout.addWidget(self.cpu_plot)
         
         # Disk I/O Plot
         self.disk_plot = pg.PlotWidget(title="Disk I/O (MB/s)")
         self.disk_plot.setLabel('left', 'Rate', units='MB/s')
         self.disk_plot.setLabel('bottom', 'Time', units='s')
+        self.disk_plot.setXRange(-self.time_window, 0)
         self.disk_plot.showGrid(x=True, y=True, alpha=0.3)
         self.disk_read_curve = self.disk_plot.plot(pen=pg.mkPen(color='#ff6b6b', width=2), name='Read')
         self.disk_write_curve = self.disk_plot.plot(pen=pg.mkPen(color='#4ecdc4', width=2), name='Write')
@@ -534,6 +757,7 @@ class SystemMonitor(QMainWindow):
         self.net_plot = pg.PlotWidget(title="Network Traffic (MB/s)")
         self.net_plot.setLabel('left', 'Rate', units='MB/s')
         self.net_plot.setLabel('bottom', 'Time', units='s')
+        self.net_plot.setXRange(-self.time_window, 0)
         self.net_plot.showGrid(x=True, y=True, alpha=0.3)
         self.net_sent_curve = self.net_plot.plot(pen=pg.mkPen(color='#ff9ff3', width=2), name='Sent')
         self.net_recv_curve = self.net_plot.plot(pen=pg.mkPen(color='#54a0ff', width=2), name='Received')
@@ -845,8 +1069,13 @@ class SystemMonitor(QMainWindow):
         self.prev_time = current_time
         
         # Update memory display labels
-        self.ram_label.setText(f"Ram: {self.ram_total/1024:.1f}GB | {self.ram_available/1024:.1f}GB | {self.ram_percent:.0f}%")
-        self.swap_label.setText(f"Swap: {self.swap_total/1024:.1f}GB | {self.swap_available/1024:.1f}GB | {self.swap_percent:.0f}%")
+        ram_used_gb = (self.ram_total - self.ram_available) / 1024
+        ram_total_gb = self.ram_total / 1024
+        self.ram_label.setText(f"Memory Usage: {self.ram_percent:.1f}% ({ram_used_gb:.1f}GB / {ram_total_gb:.1f}GB)")
+
+        swap_used_gb = (self.swap_total - self.swap_available) / 1024
+        swap_total_gb = self.swap_total / 1024
+        self.swap_label.setText(f"Swap Usage: {self.swap_percent:.1f}% ({swap_used_gb:.1f}GB / {swap_total_gb:.1f}GB)")
         
         # Update plots
         self.update_plots()
@@ -1940,6 +2169,12 @@ Please check the docs/users-guide.md file in the SysMon repository."""
         
         # Show dialog
         dialog.exec_()
+    
+    def show_realtime_processes(self, metric_type):
+        """Show real-time process monitoring dialog"""
+        if metric_type == 'cpu':
+            dialog = RealTimeProcessDialog(self)
+            dialog.exec_()
     
     def show_keyboard_shortcuts(self):
         """Show keyboard shortcuts and navigation help dialog"""

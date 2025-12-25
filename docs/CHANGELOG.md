@@ -1,5 +1,34 @@
 # Changelog - sysmon.py
 
+## 2025-12-24 1928 CST - Memory Display & X-Axis Enhancement  [ v0.2.11 ]
+
+### 📊 **Memory Display Reformat**
+- **New Format Pattern**: Memory and Swap displays now use intuitive "Usage: XX% (Used / Total)" format
+- **Memory Display**: Changed from "Ram: 7.6GB | 3.1GB | 59%" to "Memory Usage: 64.4% (4.5GB / 7.6GB)"
+- **Swap Display**: Changed from "Swap: 8.0GB | 2.0GB | 75%" to "Swap Usage: 75.0% (6.0GB / 8.0GB)"
+- **Improved Readability**: Percentage-first format with clearer used/total relationship
+- **Consistent Labeling**: "Memory Usage" and "Swap Usage" labels for better clarity
+
+### 📈 **X-Axis Startup Behavior Fix**
+- **Immediate Full Scale**: X-axis now displays complete time window on startup
+- **No Visual Confusion**: Eliminated gradual scale expansion that confused users during startup
+- **All Graphs Fixed**: Applied to CPU, Disk I/O, and Network plots
+- **Better UX**: Users immediately see the full time range (e.g., -20s to 0s for 20-second window)
+- **Data Flow**: Plot data appears from right and scrolls left as expected from startup
+
+### 🔧 **Technical Implementation**
+- **Memory Calculations**: Added used memory calculation (total - available) for accurate display
+- **X-Axis Initialization**: Added `setXRange(-self.time_window, 0)` to all three plot widgets during setup
+- **Format Update**: Updated both initial placeholder labels and live update text formatting
+- **Consistent Precision**: Percentage shows 1 decimal place, GB values show 1 decimal place
+
+### 📝 **Files Modified**
+- **`src/sysmon.py`**: Memory display labels and calculations updated (lines 715, 721, 1069-1075)
+- **`src/sysmon.py`**: X-axis range initialization added to all plots (lines 736, 747, 760)
+- **`docs/CHANGELOG.md`**: New v0.2.11 changelog entry
+
+---
+
 ## 2025-12-24 1015 CST - Keyboard Minimize Shortcut  [ v0.2.10 ]
 
 ### ⌨️ **New Keyboard Shortcut Feature**
