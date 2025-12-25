@@ -1,7 +1,7 @@
 # SysMon - Real-time System Monitor
 
-**Version:** v0.2.9 (Production Release)
-**Release Date:** 2025-12-23
+**Version:** v0.2.12 (Production Release)
+**Release Date:** 2025-12-25
 
 ## Description
 Comprehensive system monitoring application with real-time graphs for CPU, Disk I/O, and Network activity. Built with PyQtGraph for performance visualization.
@@ -9,6 +9,7 @@ Comprehensive system monitoring application with real-time graphs for CPU, Disk 
 ## Features
 - **Real-time monitoring** with smooth scrolling graphs (75-150x faster than matplotlib)
 - **Live memory display** showing RAM and Swap usage in real-time
+- **Persistent graph preferences** including axis inversion direction (left-to-right or right-to-left)
 - **Professional menu system** with File, Edit, View, Config, Help menus
 - **Window transparency** for see-through mode (10%-100% opacity control)
 - **Always On Top** toggle for floating desktop monitor
@@ -62,11 +63,19 @@ python3 src/sysmon.py
 - `-t, --time-window`: Time window in seconds (5-120, default: 20)
 
 ### Interactive Controls
-- Double-click on graph: Show top 10 processes for that metric
-- Config menu: Time window settings, transparency, always-on-top
+- **Double-click on graph**: Show top 10 processes for that metric
+- **Right-click on graph**: Access context menu (includes X-axis inversion option)
+- **Config menu**: Time window settings, transparency, always-on-top
+- **Keyboard shortcuts**: See Help → Keyboard Shortcuts for full list
 
 ## Configuration
-Configuration saved to: `~/.sysmon_config.json`
+Configuration files are stored in XDG-compliant locations:
+- **Linux/macOS**: `~/.config/sysmon/` (config.json, preferences.json)
+- **Windows**: `%APPDATA%\sysmon\` (config.json, preferences.json)
+
+The configuration includes:
+- **config.json**: Window geometry and position
+- **preferences.json**: User settings (update interval, time window, transparency, always-on-top, axis inversion, graph colors)
 
 ## Version History
 See [CHANGELOG.md](docs/CHANGELOG.md) for detailed version history.
