@@ -88,6 +88,23 @@ python3 src/sysmon.py
 - **Config menu**: Time window settings, transparency, always-on-top
 - **Keyboard shortcuts**: See Help → Keyboard Shortcuts for full list
 
+## Screenshots
+
+### Real-Time CPU Process Monitor
+![CPU Dialog](images/dialog-cpu-realtime.png)
+
+**Features**: Live CPU and memory usage for top 10 processes, sortable columns, process filtering, adjustable update intervals.
+
+### Real-Time Disk I/O Monitor
+![Disk I/O Dialog](images/dialog-disk-realtime.png)
+
+**Features**: Read/Write MB/s rates with delta-based calculation, total cumulative I/O, tracks active disk operations.
+
+### Real-Time Network Monitor
+![Network Dialog](images/dialog-network-realtime.png)
+
+**Features**: Connection counts per process, TCP/UDP protocol breakdown, ESTABLISHED connection tracking.
+
 ## Configuration
 Configuration files are stored in XDG-compliant locations:
 - **Linux/macOS**: `~/.config/sysmon/` (config.json, preferences.json)
