@@ -8,6 +8,11 @@ Comprehensive system monitoring application with real-time graphs for CPU, Disk 
 
 ## Features
 - **Real-time monitoring** with smooth scrolling graphs (75-150x faster than matplotlib)
+- **Real-time drill-down dialogs** for CPU, Disk I/O, and Network process analysis
+  - Live-updating top 10 process lists with sortable columns
+  - Adjustable update intervals (1-60 seconds, default 3s)
+  - Process filtering by name or PID
+  - Pause/Resume controls for snapshot analysis
 - **Live memory display** showing RAM and Swap usage in real-time
 - **Persistent graph preferences** including axis inversion direction (left-to-right or right-to-left)
 - **Professional menu system** with File, Edit, View, Config, Help menus
@@ -16,7 +21,6 @@ Comprehensive system monitoring application with real-time graphs for CPU, Disk 
 - **XDG compliance** for cross-platform configuration management
 - **Cross-platform compatibility** (Windows, Linux, macOS)
 - **Automatic system theme** detection (light/dark mode)
-- **Process resource analysis** with drill-down capability
 - **Window geometry persistence** with XDG-compliant configuration
 - **Keyboard shortcuts** for power users (Ctrl+S, Ctrl+C, F11, etc.)
 
@@ -63,7 +67,23 @@ python3 src/sysmon.py
 - `-t, --time-window`: Time window in seconds (5-120, default: 20)
 
 ### Interactive Controls
-- **Double-click on graph**: Show top 10 processes for that metric
+- **Double-click on CPU graph**: Open real-time CPU process monitor
+  - Shows: PID, Process Name, CPU %, Memory %
+  - Updates every 3 seconds (adjustable 1-60s)
+  - Sortable columns (click headers to sort)
+  - Filter processes by name or PID
+  - Pause/Resume for snapshot analysis
+
+- **Double-click on Disk I/O graph**: Open real-time disk I/O monitor
+  - Shows: PID, Process Name, Read MB/s, Write MB/s, Total MB
+  - Delta-based rate calculation for accurate MB/s metrics
+  - Tracks processes performing active disk operations
+
+- **Double-click on Network graph**: Open real-time network monitor
+  - Shows: PID, Process Name, Total Connections, TCP, UDP, ESTABLISHED
+  - Protocol breakdown (TCP vs UDP connections)
+  - Connection state tracking (ESTABLISHED, LISTEN)
+
 - **Right-click on graph**: Access context menu (includes X-axis inversion option)
 - **Config menu**: Time window settings, transparency, always-on-top
 - **Keyboard shortcuts**: See Help → Keyboard Shortcuts for full list
