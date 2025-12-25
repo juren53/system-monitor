@@ -1,0 +1,30 @@
+Features of the PyQtGraph library context menu, a built-in feature of PyQtGraph's plotting widgets.
+
+ Here is a brief explanation of the options you are seeing:
+
+   * View All: This option automatically adjusts the plot's axes to display all of the data you've plotted. It's a
+     quick way to "zoom out" completely.
+   * X Axis / Y Axis: These submenus allow you to control the behavior of the respective axes. You can often find
+     options here to:
+       * Enable/disable auto-scaling.
+       * Link the axis with other plots.
+       * Set logarithmic or linear scaling.
+   * Mouse Mode: This lets you change how the mouse interacts with the plot. You can typically switch between:
+       * 1-Button Mode: Left-click-drag to pan, and use the scroll wheel to zoom.
+       * 3-Button Mode: Left-click-drag to zoom (by drawing a box), and middle-click or right-click-drag to pan. The
+         exact behavior can vary slightly.
+   * Plot Options: This menu often contains more advanced features for data analysis and visualization, such as:
+       * Transformations: Applying transformations like Fast Fourier Transform (FFT) to the data.
+       * Grid: Toggling the visibility of the grid lines.
+
+  For more detailed documentation, the official PyQtGraph documentation is the best place to go. The context menu is
+  part of the PlotItem class. You can find more information about it and other features here:
+
+   * PyQtGraph Documentation: https://www.pyqtgraph.org (https://www.pyqtgraph.org)
+   * PlotItem Class: The documentation for the PlotItem will have details on its configuration: pyqtgraph.PlotItem
+     documentation (https://pyqtgraph.readthedocs.io/en/latest/graphicsItems/plotitem.html)
+   * Examples: PyQtGraph comes with a comprehensive set of examples that are a great way to learn about its features
+     interactively. If you run the examples from the library, you can experiment with these menus on different types
+     of plots.
+
+  Exploring the examples is often the fastest way to understand all the interactive features the library offers.
