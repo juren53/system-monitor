@@ -1,5 +1,46 @@
 # Changelog - sysmon.py
 
+## 2025-12-25 0124 CST - Graph Axis Inversion Persistence  [ v0.2.12 ]
+
+### 🔄 **Persistent Axis Inversion Feature**
+- **Graph Direction Control**: X-axis inversion setting now persists across application restarts
+- **Context Menu Integration**: Right-click any graph → X axis → Invert Axis checkbox
+- **Synchronized Behavior**: All three graphs (CPU, Disk, Network) share the same inversion setting
+- **Automatic Sync**: Inverting one graph automatically synchronizes the other two
+- **Seamless Persistence**: Setting saved to `preferences.json` and restored on startup
+
+### 🎯 **User Experience Enhancement**
+- **Before**: Users had to manually re-invert axes after every SysMon restart
+- **After**: Axis direction preference remembered permanently
+- **Flow Options**: Choose between right-to-left (default) or left-to-right data flow
+- **One-Click Change**: Single context menu click applies to all graphs instantly
+
+### 🔧 **Technical Implementation**
+- **Instance Variable**: Added `self.invert_axis` boolean to track shared state (line 618)
+- **Loading Flag**: Added `self._loading_preferences` to prevent signal interference during init (line 619)
+- **Signal Connections**: Connected ViewBox `sigStateChanged` signals for all three plots (lines 772-774)
+- **Signal Handler**: New `on_axis_changed()` method handles inversion changes and saves preferences (lines 1410-1429)
+- **Preferences Save**: Added `invert_axis` to preferences dictionary (line 1439)
+- **Preferences Load**: Load and apply saved setting during `load_window_geometry()` (lines 1350-1372)
+- **Race Condition Fix**: Loading flag prevents signal handler from overwriting saved settings during initialization
+
+### 🐛 **Bug Fixes**
+- **Initialization Race Condition**: Fixed issue where applying saved settings triggered signals that immediately reverted the change
+- **Signal Timing**: Set `_loading_preferences` flag before loading to block premature signal handling
+- **State Synchronization**: Ensured all three graphs maintain consistent inversion state
+
+### 📝 **Files Modified**
+- **`src/sysmon.py`**: Added axis inversion persistence system (7 modifications across multiple sections)
+- **`notes/persist-axis-inversion-plan.md`**: Implementation plan documentation
+- **`docs/CHANGELOG.md`**: New v0.2.12 changelog entry
+
+### 💾 **Configuration Storage**
+- **File**: `~/.config/sysmon/preferences.json` (Linux/macOS) or `%APPDATA%/sysmon/preferences.json` (Windows)
+- **Format**: `"invert_axis": true/false`
+- **Integration**: Works seamlessly with existing transparency, always_on_top, and other preferences
+
+---
+
 ## 2025-12-24 1928 CST - Memory Display & X-Axis Enhancement  [ v0.2.11 ]
 
 ### 📊 **Memory Display Reformat**

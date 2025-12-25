@@ -85,14 +85,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.9"
-RELEASE_DATE = "2025-12-23"
-RELEASE_TIME = "1930 CST"
+VERSION = "0.2.12"
+RELEASE_DATE = "2025-12-25"
+RELEASE_TIME = "0124 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
-BUILD_DATE = "2025-12-23"
-BUILD_TIME = "1930 CST"
+BUILD_DATE = "2025-12-25"
+BUILD_TIME = "0124 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -615,6 +615,8 @@ class SystemMonitor(QMainWindow):
         self.update_interval = 200  # ms
         self.transparency = 1.0  # 1.0 = opaque, 0.0 = fully transparent
         self.always_on_top = False  # Window always on top setting
+        self.invert_axis = False  # X-axis inversion for all graphs
+        self._loading_preferences = False  # Flag to prevent signal handling during init
         self.max_points = int((self.time_window * 1000) / self.update_interval)
         
         # Data storage
@@ -765,7 +767,13 @@ class SystemMonitor(QMainWindow):
         self.net_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_top_processes('network') if evt.double() else None)
         main_layout.addWidget(self.net_plot)
-        
+
+        # Connect to state change signals to auto-save when user inverts axes
+        # All graphs share the same invert_axis setting
+        self.cpu_plot.getPlotItem().getViewBox().sigStateChanged.connect(self.on_axis_changed)
+        self.disk_plot.getPlotItem().getViewBox().sigStateChanged.connect(self.on_axis_changed)
+        self.net_plot.getPlotItem().getViewBox().sigStateChanged.connect(self.on_axis_changed)
+
         # Version label in lower right corner
         version_layout = QHBoxLayout()
         version_layout.addStretch()
@@ -1338,11 +1346,14 @@ class SystemMonitor(QMainWindow):
             if os.path.exists(self.preferences_file):
                 with open(self.preferences_file, 'r') as f:
                     prefs = json.load(f)
+                    # Set flag before loading any preferences to block signal handling
+                    self._loading_preferences = True
                     self.update_interval = prefs.get('update_interval', 200)
                     self.time_window = prefs.get('time_window', 30)
                     self.transparency = prefs.get('transparency', 1.0)
                     self.always_on_top = prefs.get('always_on_top', False)
-                    
+                    self.invert_axis = prefs.get('invert_axis', False)
+
                     # Apply loaded preferences
                     if hasattr(self, 'timer'):
                         self.timer.setInterval(self.update_interval)
@@ -1350,8 +1361,18 @@ class SystemMonitor(QMainWindow):
                     self.set_window_transparency(self.transparency)
                     self.set_always_on_top(self.always_on_top)
                     self.always_on_top_action.setChecked(self.always_on_top)
-                    
+
+                    # Apply saved axis inversion state to all graphs
+                    if self.invert_axis:
+                        self.cpu_plot.getPlotItem().getViewBox().invertX(True)
+                        self.disk_plot.getPlotItem().getViewBox().invertX(True)
+                        self.net_plot.getPlotItem().getViewBox().invertX(True)
+
+                    # Clear the flag after all preferences are applied
+                    self._loading_preferences = False
+
         except Exception as e:
+            self._loading_preferences = False  # Ensure flag is reset even on error
             print(f"Failed to load configuration: {e}")
     
     def save_window_geometry(self):
@@ -1385,7 +1406,28 @@ class SystemMonitor(QMainWindow):
                 # print(f"Saved configuration to: {self.config_file}")  # Debug output
         except Exception as e:
             print(f"Failed to save configuration: {e}")  # Debug output
-    
+
+    def on_axis_changed(self):
+        """Handle axis inversion changes from any graph's context menu"""
+        # Skip signal handling during preference loading to prevent overwriting saved settings
+        if self._loading_preferences:
+            return
+
+        # Get the state from whichever graph triggered the signal
+        sender = self.sender()  # Get the ViewBox that triggered the signal
+        state = sender.getState()
+        new_invert_state = state.get('xInverted', False)
+
+        # Only update if state actually changed to avoid recursion
+        if new_invert_state != self.invert_axis:
+            self.invert_axis = new_invert_state
+            # Apply the same state to all three graphs
+            self.cpu_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
+            self.disk_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
+            self.net_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
+            # Save the preference
+            self.save_preferences()
+
     def save_preferences(self):
         """Save user preferences to separate preferences file"""
         try:
@@ -1393,7 +1435,8 @@ class SystemMonitor(QMainWindow):
                 'update_interval': self.update_interval,
                 'time_window': self.time_window,
                 'transparency': self.transparency,
-                'always_on_top': self.always_on_top
+                'always_on_top': self.always_on_top,
+                'invert_axis': self.invert_axis
             }
             
             with open(self.preferences_file, 'w') as f:
