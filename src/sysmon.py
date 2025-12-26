@@ -291,9 +291,47 @@ class ProcessWorker(QObject):
                         cpu_value = proc.cpu_percent()  # Second call returns actual percentage
                         memory_value = proc.memory_percent()
 
+                        # Collect additional process details
+                        cmdline = exe_path = cwd = username = status = ''
+                        num_threads = 0
+
+                        try:
+                            cmdline_list = proc.cmdline()
+                            cmdline = ' '.join(cmdline_list) if cmdline_list else proc.info['name']
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            cmdline = proc.info['name']
+
+                        try:
+                            exe_path = proc.exe()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            exe_path = ''
+
+                        try:
+                            cwd = proc.cwd()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            cwd = ''
+
+                        try:
+                            username = proc.username()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            username = ''
+
+                        try:
+                            status = proc.status()
+                            num_threads = proc.num_threads()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            status = ''
+                            num_threads = 0
+
                         processes.append({
                             'pid': proc.info['pid'],
                             'name': proc.info['name'],
+                            'cmdline': cmdline,
+                            'exe': exe_path,
+                            'cwd': cwd,
+                            'username': username,
+                            'status': status,
+                            'num_threads': num_threads,
                             'cpu_percent': cpu_value,
                             'memory_percent': memory_value
                         })
@@ -474,7 +512,7 @@ class RealTimeProcessDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Real-Time Top 10 CPU Processes")
-        self.resize(550, 400)
+        self.resize(750, 400)
 
         # Update interval in milliseconds (default 3 seconds)
         self.update_interval = 3000
@@ -561,7 +599,7 @@ class RealTimeProcessDialog(QDialog):
 
         # Set column widths
         self.table_widget.setColumnWidth(0, 80)   # PID
-        self.table_widget.setColumnWidth(1, 240)  # Process Name (reduced to fit memory column)
+        self.table_widget.setColumnWidth(1, 400)  # Process Name / Command Line
         self.table_widget.setColumnWidth(2, 100)  # CPU %
         self.table_widget.setColumnWidth(3, 100)  # Memory %
 
@@ -698,9 +736,30 @@ class RealTimeProcessDialog(QDialog):
             pid_item.setFont(QFont("Arial", 10))
             self.table_widget.setItem(row, 0, pid_item)
 
-            # Process Name
-            name_item = QTableWidgetItem(proc['name'][:25])  # Limit to 25 chars (reduced for memory column)
+            # Process Name / Command Line
+            cmdline = proc.get('cmdline', proc['name'])
+            cmdline_display = cmdline[:70] + '...' if len(cmdline) > 70 else cmdline
+            name_item = QTableWidgetItem(cmdline_display)
             name_item.setFont(QFont("Arial", 10))
+
+            # Add rich tooltip with full process details
+            tooltip_parts = [
+                f"PID: {proc['pid']}",
+                f"Command: {cmdline}",
+            ]
+            if proc.get('exe'):
+                tooltip_parts.append(f"Executable: {proc['exe']}")
+            if proc.get('cwd'):
+                tooltip_parts.append(f"Working Dir: {proc['cwd']}")
+            if proc.get('username'):
+                tooltip_parts.append(f"User: {proc['username']}")
+            if proc.get('status'):
+                status_str = f"Status: {proc['status']}"
+                if proc.get('num_threads', 0) > 0:
+                    status_str += f" ({proc['num_threads']} threads)"
+                tooltip_parts.append(status_str)
+
+            name_item.setToolTip('\n'.join(tooltip_parts))
             self.table_widget.setItem(row, 1, name_item)
 
             # CPU %
@@ -757,7 +816,7 @@ class RealTimeDiskDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Real-Time Top 10 Disk I/O Processes")
-        self.resize(650, 400)
+        self.resize(850, 400)
 
         # Update interval in milliseconds (default 3 seconds)
         self.update_interval = 3000
@@ -848,7 +907,7 @@ class RealTimeDiskDialog(QDialog):
 
         # Set column widths
         self.table_widget.setColumnWidth(0, 80)   # PID
-        self.table_widget.setColumnWidth(1, 200)  # Process Name
+        self.table_widget.setColumnWidth(1, 400)  # Process Name / Command Line
         self.table_widget.setColumnWidth(2, 100)  # Read MB/s
         self.table_widget.setColumnWidth(3, 100)  # Write MB/s
         self.table_widget.setColumnWidth(4, 100)  # Total MB
@@ -988,9 +1047,30 @@ class RealTimeDiskDialog(QDialog):
             pid_item.setFont(QFont("Arial", 10))
             self.table_widget.setItem(row, 0, pid_item)
 
-            # Process Name
-            name_item = QTableWidgetItem(proc['name'][:20])
+            # Process Name / Command Line
+            cmdline = proc.get('cmdline', proc['name'])
+            cmdline_display = cmdline[:70] + '...' if len(cmdline) > 70 else cmdline
+            name_item = QTableWidgetItem(cmdline_display)
             name_item.setFont(QFont("Arial", 10))
+
+            # Add rich tooltip with full process details
+            tooltip_parts = [
+                f"PID: {proc['pid']}",
+                f"Command: {cmdline}",
+            ]
+            if proc.get('exe'):
+                tooltip_parts.append(f"Executable: {proc['exe']}")
+            if proc.get('cwd'):
+                tooltip_parts.append(f"Working Dir: {proc['cwd']}")
+            if proc.get('username'):
+                tooltip_parts.append(f"User: {proc['username']}")
+            if proc.get('status'):
+                status_str = f"Status: {proc['status']}"
+                if proc.get('num_threads', 0) > 0:
+                    status_str += f" ({proc['num_threads']} threads)"
+                tooltip_parts.append(status_str)
+
+            name_item.setToolTip('\n'.join(tooltip_parts))
             self.table_widget.setItem(row, 1, name_item)
 
             # Read MB/s
@@ -1103,9 +1183,47 @@ class DiskIOWorker(QObject):
 
                     # Only include processes with some I/O activity
                     if total_io > 0.01 or read_rate > 0.01 or write_rate > 0.01:
+                        # Collect additional process details
+                        cmdline = exe_path = cwd = username = status = ''
+                        num_threads = 0
+
+                        try:
+                            cmdline_list = proc.cmdline()
+                            cmdline = ' '.join(cmdline_list) if cmdline_list else name
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            cmdline = name
+
+                        try:
+                            exe_path = proc.exe()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            exe_path = ''
+
+                        try:
+                            cwd = proc.cwd()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            cwd = ''
+
+                        try:
+                            username = proc.username()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            username = ''
+
+                        try:
+                            status = proc.status()
+                            num_threads = proc.num_threads()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            status = ''
+                            num_threads = 0
+
                         processes.append({
                             'pid': pid,
                             'name': name,
+                            'cmdline': cmdline,
+                            'exe': exe_path,
+                            'cwd': cwd,
+                            'username': username,
+                            'status': status,
+                            'num_threads': num_threads,
                             'read_rate': max(0, read_rate),  # Ensure non-negative
                             'write_rate': max(0, write_rate),
                             'total_io': total_io
@@ -1134,7 +1252,7 @@ class RealTimeNetworkDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Real-Time Top 10 Network Processes")
-        self.resize(750, 400)
+        self.resize(950, 400)
 
         # Update interval in milliseconds (default 3 seconds)
         self.update_interval = 3000
@@ -1223,7 +1341,7 @@ class RealTimeNetworkDialog(QDialog):
 
         # Set column widths
         self.table_widget.setColumnWidth(0, 80)   # PID
-        self.table_widget.setColumnWidth(1, 200)  # Process Name
+        self.table_widget.setColumnWidth(1, 400)  # Process Name / Command Line
         self.table_widget.setColumnWidth(2, 100)  # Total Connections
         self.table_widget.setColumnWidth(3, 80)   # TCP
         self.table_widget.setColumnWidth(4, 80)   # UDP
@@ -1360,9 +1478,30 @@ class RealTimeNetworkDialog(QDialog):
             pid_item.setFont(QFont("Arial", 10))
             self.table_widget.setItem(row, 0, pid_item)
 
-            # Process Name
-            name_item = QTableWidgetItem(proc['name'][:20])
+            # Process Name / Command Line
+            cmdline = proc.get('cmdline', proc['name'])
+            cmdline_display = cmdline[:70] + '...' if len(cmdline) > 70 else cmdline
+            name_item = QTableWidgetItem(cmdline_display)
             name_item.setFont(QFont("Arial", 10))
+
+            # Add rich tooltip with full process details
+            tooltip_parts = [
+                f"PID: {proc['pid']}",
+                f"Command: {cmdline}",
+            ]
+            if proc.get('exe'):
+                tooltip_parts.append(f"Executable: {proc['exe']}")
+            if proc.get('cwd'):
+                tooltip_parts.append(f"Working Dir: {proc['cwd']}")
+            if proc.get('username'):
+                tooltip_parts.append(f"User: {proc['username']}")
+            if proc.get('status'):
+                status_str = f"Status: {proc['status']}"
+                if proc.get('num_threads', 0) > 0:
+                    status_str += f" ({proc['num_threads']} threads)"
+                tooltip_parts.append(status_str)
+
+            name_item.setToolTip('\n'.join(tooltip_parts))
             self.table_widget.setItem(row, 1, name_item)
 
             # Total Connections
@@ -1467,9 +1606,47 @@ class NetworkWorker(QObject):
                         listen_count = sum(1 for conn in connections
                                           if hasattr(conn, 'status') and conn.status == 'LISTEN')
 
+                        # Collect additional process details
+                        cmdline = exe_path = cwd = username = status = ''
+                        num_threads = 0
+
+                        try:
+                            cmdline_list = proc.cmdline()
+                            cmdline = ' '.join(cmdline_list) if cmdline_list else name
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            cmdline = name
+
+                        try:
+                            exe_path = proc.exe()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            exe_path = ''
+
+                        try:
+                            cwd = proc.cwd()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            cwd = ''
+
+                        try:
+                            username = proc.username()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            username = ''
+
+                        try:
+                            status = proc.status()
+                            num_threads = proc.num_threads()
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            status = ''
+                            num_threads = 0
+
                         processes.append({
                             'pid': pid,
                             'name': name,
+                            'cmdline': cmdline,
+                            'exe': exe_path,
+                            'cwd': cwd,
+                            'username': username,
+                            'status': status,
+                            'num_threads': num_threads,
                             'connections': len(connections),
                             'tcp_connections': tcp_count,
                             'udp_connections': udp_count,

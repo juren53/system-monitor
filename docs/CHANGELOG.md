@@ -1,5 +1,53 @@
 # Changelog - sysmon.py
 
+## 2025-12-25 1630 CST - Enhanced Process Details in Drill-Down Dialogs  [ v0.2.15 ]
+
+### 🚀 **Major Enhancement: Full Command Line & Rich Process Details**
+- **Command Line Display**: Show first 70 characters of full command line (like glances)
+  - Before: `chrome.exe` (truncated to 20-25 chars)
+  - After: `chrome.exe --type=renderer --origin-trial-disabled --autoplay-polic...`
+- **Rich Tooltips**: Hover over any process to see complete details
+  - Full command line (no truncation)
+  - Executable path: `C:\Program Files\Google\Chrome\chrome.exe`
+  - Working directory: `C:\Users\jimur`
+  - User: `DESKTOP\jimur`
+  - Status & threads: `running (12 threads)`
+
+### 📊 **All Three Dialogs Enhanced**
+- **RealTimeProcessDialog** (CPU): Wider column (240px → 400px), dialog 750px wide
+- **RealTimeDiskDialog** (Disk I/O): Wider column (200px → 400px), dialog 850px wide
+- **RealTimeNetworkDialog** (Network): Wider column (200px → 400px), dialog 950px wide
+
+### 💻 **Data Collection Enhancement**
+- **ProcessWorker**: Now collects cmdline, exe, cwd, username, status, num_threads
+- **DiskIOWorker**: Enhanced with full process details
+- **NetworkWorker**: Enhanced with full process details
+- **Error Handling**: Graceful fallback for processes that deny access
+- **Performance**: Minimal impact (psutil already accesses process info)
+
+### 🎯 **User Benefits**
+- See what processes are actually doing (arguments matter!)
+- Identify Chrome renderer vs browser processes
+- Distinguish Python scripts by their full command
+- Professional monitoring similar to glances/htop
+- No extra clicks needed - details visible on hover
+
+### 📝 **Implementation Details**
+- **Lines Added**: ~190 lines
+- **Modified Classes**: ProcessWorker, DiskIOWorker, NetworkWorker
+- **Modified Dialogs**: RealTimeProcessDialog, RealTimeDiskDialog, RealTimeNetworkDialog
+- **Location**: src/sysmon.py:294-337 (ProcessWorker), 1144-1188 (DiskIOWorker), 1546-1592 (NetworkWorker)
+- **Display Logic**: src/sysmon.py:740-763 (CPU), 1051-1074 (Disk), 1482-1505 (Network)
+
+### 🔧 **Technical Details**
+- Uses `proc.cmdline()` to get full command with arguments
+- Displays first 70 chars with ellipsis for very long commands
+- Tooltip shows unlimited text with all available details
+- Falls back to process name if cmdline unavailable
+- Cross-platform compatible (Windows, Linux, macOS)
+
+---
+
 ## 2025-12-25 1600 CST - Left-Justify Drill-Down Dialog Headers  [ v0.2.15 ]
 
 ### 🎨 **UI Improvement: Left-Aligned Table Headers**
