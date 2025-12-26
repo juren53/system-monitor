@@ -1,6 +1,32 @@
 # Changelog - sysmon.py
 
-## 2025-12-25 1630 CST - Enhanced Process Details in Drill-Down Dialogs  [ v0.2.15 ]
+## v0.2.16 - 2025-12-25 1700 CST - Enhanced Process Monitoring & Configuration Features
+
+### 🎉 **Release Summary**
+Major quality-of-life improvements to process monitoring dialogs with full command line display, rich tooltips, configuration file viewer, and UI refinements.
+
+### ✨ **Key Features**
+1. **Full Command Line Display** - See complete process commands (like glances)
+2. **Rich Process Tooltips** - Hover for exe path, working dir, user, status, threads
+3. **Config File Viewer** - View SysMon configuration files from within the app
+4. **Left-Aligned Headers** - Improved table header readability
+
+### 📊 **Enhancement Details**
+- Command line display in all drill-down dialogs (CPU, Disk, Network)
+- First 70 chars visible, full details on hover
+- Wider dialog windows for better information visibility
+- Read-only config viewer with tabbed interface
+- Cross-platform process details collection
+
+### 📝 **Files Modified**
+- src/sysmon.py: ~280 lines added
+- docs/CHANGELOG.md: Comprehensive documentation
+- README.md, CLAUDE.md: Version updates
+- notes/process-details-enhancement-plan.md: Planning document
+
+---
+
+## 2025-12-25 1630 CST - Enhanced Process Details in Drill-Down Dialogs  [ v0.2.16 ]
 
 ### 🚀 **Major Enhancement: Full Command Line & Rich Process Details**
 - **Command Line Display**: Show first 70 characters of full command line (like glances)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.15
-Release: 2025-12-25 0909 CST
+SysMon - PyQtGraph-based System Monitor v0.2.16
+Release: 2025-12-25 1700 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -88,14 +88,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.15"
+VERSION = "0.2.16"
 RELEASE_DATE = "2025-12-25"
-RELEASE_TIME = "0909 CST"
+RELEASE_TIME = "1700 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
 BUILD_DATE = "2025-12-25"
-BUILD_TIME = "0909 CST"
+BUILD_TIME = "1700 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
