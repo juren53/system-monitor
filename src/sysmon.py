@@ -291,47 +291,17 @@ class ProcessWorker(QObject):
                         cpu_value = proc.cpu_percent()  # Second call returns actual percentage
                         memory_value = proc.memory_percent()
 
-                        # Collect additional process details
-                        cmdline = exe_path = cwd = username = status = ''
-                        num_threads = 0
-
+                        # Collect command line only (for performance)
                         try:
                             cmdline_list = proc.cmdline()
                             cmdline = ' '.join(cmdline_list) if cmdline_list else proc.info['name']
                         except (psutil.AccessDenied, psutil.NoSuchProcess):
                             cmdline = proc.info['name']
 
-                        try:
-                            exe_path = proc.exe()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            exe_path = ''
-
-                        try:
-                            cwd = proc.cwd()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            cwd = ''
-
-                        try:
-                            username = proc.username()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            username = ''
-
-                        try:
-                            status = proc.status()
-                            num_threads = proc.num_threads()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            status = ''
-                            num_threads = 0
-
                         processes.append({
                             'pid': proc.info['pid'],
                             'name': proc.info['name'],
                             'cmdline': cmdline,
-                            'exe': exe_path,
-                            'cwd': cwd,
-                            'username': username,
-                            'status': status,
-                            'num_threads': num_threads,
                             'cpu_percent': cpu_value,
                             'memory_percent': memory_value
                         })
@@ -1145,47 +1115,17 @@ class DiskIOWorker(QObject):
 
                     # Only include processes with some I/O activity
                     if total_io > 0.01 or read_rate > 0.01 or write_rate > 0.01:
-                        # Collect additional process details
-                        cmdline = exe_path = cwd = username = status = ''
-                        num_threads = 0
-
+                        # Collect command line only (for performance)
                         try:
                             cmdline_list = proc.cmdline()
                             cmdline = ' '.join(cmdline_list) if cmdline_list else name
                         except (psutil.AccessDenied, psutil.NoSuchProcess):
                             cmdline = name
 
-                        try:
-                            exe_path = proc.exe()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            exe_path = ''
-
-                        try:
-                            cwd = proc.cwd()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            cwd = ''
-
-                        try:
-                            username = proc.username()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            username = ''
-
-                        try:
-                            status = proc.status()
-                            num_threads = proc.num_threads()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            status = ''
-                            num_threads = 0
-
                         processes.append({
                             'pid': pid,
                             'name': name,
                             'cmdline': cmdline,
-                            'exe': exe_path,
-                            'cwd': cwd,
-                            'username': username,
-                            'status': status,
-                            'num_threads': num_threads,
                             'read_rate': max(0, read_rate),  # Ensure non-negative
                             'write_rate': max(0, write_rate),
                             'total_io': total_io
@@ -1549,47 +1489,17 @@ class NetworkWorker(QObject):
                         listen_count = sum(1 for conn in connections
                                           if hasattr(conn, 'status') and conn.status == 'LISTEN')
 
-                        # Collect additional process details
-                        cmdline = exe_path = cwd = username = status = ''
-                        num_threads = 0
-
+                        # Collect command line only (for performance)
                         try:
                             cmdline_list = proc.cmdline()
                             cmdline = ' '.join(cmdline_list) if cmdline_list else name
                         except (psutil.AccessDenied, psutil.NoSuchProcess):
                             cmdline = name
 
-                        try:
-                            exe_path = proc.exe()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            exe_path = ''
-
-                        try:
-                            cwd = proc.cwd()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            cwd = ''
-
-                        try:
-                            username = proc.username()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            username = ''
-
-                        try:
-                            status = proc.status()
-                            num_threads = proc.num_threads()
-                        except (psutil.AccessDenied, psutil.NoSuchProcess):
-                            status = ''
-                            num_threads = 0
-
                         processes.append({
                             'pid': pid,
                             'name': name,
                             'cmdline': cmdline,
-                            'exe': exe_path,
-                            'cwd': cwd,
-                            'username': username,
-                            'status': status,
-                            'num_threads': num_threads,
                             'connections': len(connections),
                             'tcp_connections': tcp_count,
                             'udp_connections': udp_count,
