@@ -1,5 +1,33 @@
 # Changelog - sysmon.py
 
+## 2025-12-25 1730 CST - Remove Tooltips for Performance  [ v0.2.16 ]
+
+### ⚡ **Performance Fix: Tooltips Removed**
+- **Issue**: Rich tooltips caused significant performance degradation
+- **Solution**: Removed all tooltip code from drill-down dialogs
+- **Impact**: Dramatic performance improvement in table rendering and scrolling
+- **Trade-off**: Command line still visible (first 70 chars), but no hover details
+
+### 📊 **What's Still Working**
+- Full command line display in Process Name column (first 70 chars with ellipsis)
+- Wider columns (400px) show more information upfront
+- All process data collection intact (exe, cwd, username, status, threads)
+- Data available for future features (e.g., Details button, export, etc.)
+
+### 💻 **Technical Details**
+- Removed tooltip generation code from all three dialogs
+- Lines removed: ~54 lines (18 per dialog × 3 dialogs)
+- No change to data collection - only display logic affected
+- Qt tooltip rendering was bottleneck
+
+### 🎯 **User Impact**
+- Much faster table updates and scrolling
+- Process Name column still shows command line with arguments
+- Most important info visible without hovering
+- Performance restored to pre-tooltip levels
+
+---
+
 ## v0.2.16 - 2025-12-25 1700 CST - Enhanced Process Monitoring & Configuration Features
 
 ### 🎉 **Release Summary**

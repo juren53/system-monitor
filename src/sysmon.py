@@ -741,25 +741,6 @@ class RealTimeProcessDialog(QDialog):
             cmdline_display = cmdline[:70] + '...' if len(cmdline) > 70 else cmdline
             name_item = QTableWidgetItem(cmdline_display)
             name_item.setFont(QFont("Arial", 10))
-
-            # Add rich tooltip with full process details
-            tooltip_parts = [
-                f"PID: {proc['pid']}",
-                f"Command: {cmdline}",
-            ]
-            if proc.get('exe'):
-                tooltip_parts.append(f"Executable: {proc['exe']}")
-            if proc.get('cwd'):
-                tooltip_parts.append(f"Working Dir: {proc['cwd']}")
-            if proc.get('username'):
-                tooltip_parts.append(f"User: {proc['username']}")
-            if proc.get('status'):
-                status_str = f"Status: {proc['status']}"
-                if proc.get('num_threads', 0) > 0:
-                    status_str += f" ({proc['num_threads']} threads)"
-                tooltip_parts.append(status_str)
-
-            name_item.setToolTip('\n'.join(tooltip_parts))
             self.table_widget.setItem(row, 1, name_item)
 
             # CPU %
@@ -1052,25 +1033,6 @@ class RealTimeDiskDialog(QDialog):
             cmdline_display = cmdline[:70] + '...' if len(cmdline) > 70 else cmdline
             name_item = QTableWidgetItem(cmdline_display)
             name_item.setFont(QFont("Arial", 10))
-
-            # Add rich tooltip with full process details
-            tooltip_parts = [
-                f"PID: {proc['pid']}",
-                f"Command: {cmdline}",
-            ]
-            if proc.get('exe'):
-                tooltip_parts.append(f"Executable: {proc['exe']}")
-            if proc.get('cwd'):
-                tooltip_parts.append(f"Working Dir: {proc['cwd']}")
-            if proc.get('username'):
-                tooltip_parts.append(f"User: {proc['username']}")
-            if proc.get('status'):
-                status_str = f"Status: {proc['status']}"
-                if proc.get('num_threads', 0) > 0:
-                    status_str += f" ({proc['num_threads']} threads)"
-                tooltip_parts.append(status_str)
-
-            name_item.setToolTip('\n'.join(tooltip_parts))
             self.table_widget.setItem(row, 1, name_item)
 
             # Read MB/s
@@ -1483,25 +1445,6 @@ class RealTimeNetworkDialog(QDialog):
             cmdline_display = cmdline[:70] + '...' if len(cmdline) > 70 else cmdline
             name_item = QTableWidgetItem(cmdline_display)
             name_item.setFont(QFont("Arial", 10))
-
-            # Add rich tooltip with full process details
-            tooltip_parts = [
-                f"PID: {proc['pid']}",
-                f"Command: {cmdline}",
-            ]
-            if proc.get('exe'):
-                tooltip_parts.append(f"Executable: {proc['exe']}")
-            if proc.get('cwd'):
-                tooltip_parts.append(f"Working Dir: {proc['cwd']}")
-            if proc.get('username'):
-                tooltip_parts.append(f"User: {proc['username']}")
-            if proc.get('status'):
-                status_str = f"Status: {proc['status']}"
-                if proc.get('num_threads', 0) > 0:
-                    status_str += f" ({proc['num_threads']} threads)"
-                tooltip_parts.append(status_str)
-
-            name_item.setToolTip('\n'.join(tooltip_parts))
             self.table_widget.setItem(row, 1, name_item)
 
             # Total Connections
