@@ -555,6 +555,10 @@ class RealTimeProcessDialog(QDialog):
         self.table_widget.setColumnCount(4)
         self.table_widget.setHorizontalHeaderLabels(["PID", "Process Name", "CPU %", "Memory %"])
 
+        # Left-justify header labels
+        header = self.table_widget.horizontalHeader()
+        header.setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+
         # Set column widths
         self.table_widget.setColumnWidth(0, 80)   # PID
         self.table_widget.setColumnWidth(1, 240)  # Process Name (reduced to fit memory column)
@@ -837,6 +841,10 @@ class RealTimeDiskDialog(QDialog):
         self.table_widget = QTableWidget()
         self.table_widget.setColumnCount(5)
         self.table_widget.setHorizontalHeaderLabels(["PID", "Process Name", "Read MB/s", "Write MB/s", "Total MB"])
+
+        # Left-justify header labels
+        header = self.table_widget.horizontalHeader()
+        header.setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
         # Set column widths
         self.table_widget.setColumnWidth(0, 80)   # PID
@@ -1208,6 +1216,10 @@ class RealTimeNetworkDialog(QDialog):
         self.table_widget.setHorizontalHeaderLabels([
             "PID", "Process Name", "Total Conns", "TCP", "UDP", "ESTABLISHED"
         ])
+
+        # Left-justify header labels
+        header = self.table_widget.horizontalHeader()
+        header.setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
         # Set column widths
         self.table_widget.setColumnWidth(0, 80)   # PID

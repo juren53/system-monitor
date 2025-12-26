@@ -1,5 +1,19 @@
 # Changelog - sysmon.py
 
+## 2025-12-25 1600 CST - Left-Justify Drill-Down Dialog Headers  [ v0.2.15 ]
+
+### 🎨 **UI Improvement: Left-Aligned Table Headers**
+- **All Drill-Down Dialogs**: Changed column headers from centered to left-aligned
+- **Affected Dialogs**: RealTimeProcessDialog, RealTimeDiskDialog, RealTimeNetworkDialog
+- **Readability**: Improved header alignment consistency with left-aligned cell data
+- **Implementation**: Added `horizontalHeader().setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)` to each dialog
+
+### 💻 **Code Changes**
+- **Lines Modified**: 3 sections (one per dialog)
+- **Location**: src/sysmon.py:558-560, 845-847, 1220-1222
+
+---
+
 ## 2025-12-25 1530 CST - Config File Viewer Feature  [ v0.2.15 ]
 
 ### 🔍 **New: View Config Files Dialog**
