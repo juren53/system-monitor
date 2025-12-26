@@ -1,5 +1,30 @@
 # Changelog - sysmon.py
 
+## 2025-12-25 1530 CST - Config File Viewer Feature  [ v0.2.15 ]
+
+### 🔍 **New: View Config Files Dialog**
+- **ConfigFileViewerDialog**: Read-only tabbed view of SysMon configuration files
+- **Menu Item**: Added "View Config Files" at top of Config menu
+- **Dual Tabs**: Browse config.json (geometry) and preferences.json (settings) separately
+- **Full Path Display**: Each tab shows complete qualified file path in header
+- **Read-Only**: Protected configuration view with monospace formatting
+- **Error Handling**: Graceful display if config files missing or unreadable
+
+### 💻 **Implementation Details**
+- **Lines Added**: ~90 lines
+- **New Class**: ConfigFileViewerDialog (tabbed dialog with QTabWidget)
+- **New Method**: view_config_files() in SystemMonitor class
+- **Import Added**: QTabWidget to PyQt5.QtWidgets imports
+- **Location**: src/sysmon.py:388-469 (dialog class), 2055-2058 (menu), 2678-2681 (handler)
+
+### 🎯 **User Benefits**
+- Quick access to configuration without leaving application
+- Easy verification of settings without manual file navigation
+- Full path display for debugging and support
+- Non-destructive viewing (read-only mode)
+
+---
+
 ## 2025-12-25 0909 CST - Complete Real-Time Drill-Down Dialogs (Phases 2 & 3)  [ v0.2.15 ]
 
 ### 🎉 **ALL THREE REAL-TIME MONITORING DIALOGS COMPLETE**

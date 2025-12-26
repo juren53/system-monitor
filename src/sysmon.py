@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                               QTextBrowser, QMenuBar, QMenu, QAction, QMessageBox,
                               QFileDialog, QInputDialog, QColorDialog, QCheckBox,
                               QSpinBox, QGroupBox, QFormLayout, QDialogButtonBox,
-                              QComboBox, QTableWidget, QTableWidgetItem, QLineEdit)
+                              QComboBox, QTableWidget, QTableWidgetItem, QLineEdit, QTabWidget)
 from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont, QColor
@@ -382,6 +382,90 @@ class ProcessInfoDialog(QDialog):
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)
         
+        self.setLayout(layout)
+
+
+class ConfigFileViewerDialog(QDialog):
+    """Dialog showing SysMon configuration files in read-only tabs"""
+    def __init__(self, config_file, preferences_file, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("SysMon Configuration Files")
+        self.resize(700, 500)
+
+        layout = QVBoxLayout()
+
+        # Create tabbed interface for both config files
+        tab_widget = QTabWidget()
+
+        # Tab 1: config.json
+        config_tab = QWidget()
+        config_layout = QVBoxLayout()
+
+        # Label showing full path
+        config_path_label = QLabel(f"<b>File:</b> {config_file}")
+        config_path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        config_path_label.setWordWrap(True)
+        config_layout.addWidget(config_path_label)
+
+        # Text editor for config.json
+        config_text_edit = QTextEdit()
+        config_text_edit.setReadOnly(True)
+        font = QFont("Monospace", 10)
+        font.setFixedPitch(True)
+        config_text_edit.setFont(font)
+
+        # Load and display config.json
+        try:
+            if os.path.exists(config_file):
+                with open(config_file, 'r') as f:
+                    config_content = f.read()
+                config_text_edit.setPlainText(config_content)
+            else:
+                config_text_edit.setPlainText(f"Configuration file not found:\n{config_file}")
+        except Exception as e:
+            config_text_edit.setPlainText(f"Error reading configuration file:\n{str(e)}")
+
+        config_layout.addWidget(config_text_edit)
+        config_tab.setLayout(config_layout)
+        tab_widget.addTab(config_tab, "config.json")
+
+        # Tab 2: preferences.json
+        prefs_tab = QWidget()
+        prefs_layout = QVBoxLayout()
+
+        # Label showing full path
+        prefs_path_label = QLabel(f"<b>File:</b> {preferences_file}")
+        prefs_path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        prefs_path_label.setWordWrap(True)
+        prefs_layout.addWidget(prefs_path_label)
+
+        # Text editor for preferences.json
+        prefs_text_edit = QTextEdit()
+        prefs_text_edit.setReadOnly(True)
+        prefs_text_edit.setFont(font)
+
+        # Load and display preferences.json
+        try:
+            if os.path.exists(preferences_file):
+                with open(preferences_file, 'r') as f:
+                    prefs_content = f.read()
+                prefs_text_edit.setPlainText(prefs_content)
+            else:
+                prefs_text_edit.setPlainText(f"Preferences file not found:\n{preferences_file}")
+        except Exception as e:
+            prefs_text_edit.setPlainText(f"Error reading preferences file:\n{str(e)}")
+
+        prefs_layout.addWidget(prefs_text_edit)
+        prefs_tab.setLayout(prefs_layout)
+        tab_widget.addTab(prefs_tab, "preferences.json")
+
+        layout.addWidget(tab_widget)
+
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn)
+
         self.setLayout(layout)
 
 
@@ -1967,7 +2051,14 @@ class SystemMonitor(QMainWindow):
         
         # Config Menu
         config_menu = menubar.addMenu('&Config')
-        
+
+        view_config_action = QAction('View Config &Files', self)
+        view_config_action.setStatusTip('View SysMon configuration files')
+        view_config_action.triggered.connect(self.view_config_files)
+        config_menu.addAction(view_config_action)
+
+        config_menu.addSeparator()
+
         update_interval_action = QAction('&Update Interval...', self)
         update_interval_action.setStatusTip('Change data update interval')
         update_interval_action.triggered.connect(self.change_update_interval)
@@ -2583,7 +2674,12 @@ class SystemMonitor(QMainWindow):
             self.max_points = int((self.time_window * 1000) / self.update_interval)
             self.update_time_window()
             self.save_preferences()
-    
+
+    def view_config_files(self):
+        """Display configuration files in read-only dialog"""
+        dialog = ConfigFileViewerDialog(self.config_file, self.preferences_file, self)
+        dialog.exec_()
+
     def change_time_window_settings(self):
         """Configure time window settings"""
         time_window, ok = QInputDialog.getInt(
