@@ -1,5 +1,28 @@
 # Changelog - sysmon.py
 
+## 2025-12-30 0000 CST - Transparency Toggle Keyboard Shortcut  [ v0.2.16 ]
+
+### ⌨️ **NEW KEYBOARD SHORTCUT: Transparency Toggle**
+- **Shortcut Key**: Press **'t'** to toggle window transparency
+- **Toggle States**:
+  - OFF: 100% opaque (fully visible)
+  - ON: 50% transparent (see-through mode)
+- **Integration**: Works seamlessly with existing transparency settings
+- **Pattern**: Follows same implementation as 'm' minimize shortcut
+
+### 📝 **Implementation Details**
+- Added `_transparency_toggled` state flag to track toggle status
+- Added `Qt.Key_T` handler in `keyPressEvent()` method
+- Created `toggle_transparency()` method with error handling
+- Uses existing `set_window_transparency()` infrastructure
+
+### 🎯 **Use Cases**
+- Quick transparency toggle while monitoring system
+- No need to open transparency dialog for common 50% setting
+- Instant visual feedback for window transparency state
+
+---
+
 ## 2025-12-25 1745 CST - Simplify Data Collection for Performance  [ v0.2.16 ]
 
 ### ⚡ **Performance Optimization: Minimal Data Collection**

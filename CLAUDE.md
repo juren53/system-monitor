@@ -66,7 +66,7 @@ Format examples:
 ### Version Numbering
 - Production releases: `v0.X.Y` (e.g., v0.2.9)
 - Point releases/patches: `v0.X.Ya`, `v0.X.Yb` (e.g., v0.2.9a)
-- Update version in: README.md, src/sysmon.py (VERSION, RELEASE_DATE, RELEASE_TIME, BUILD_DATE, BUILD_TIME), About dialog
+- Update version in: README.md, src/sysmon.py (VERSION, RELEASE_DATE, RELEASE_TIME, BUILD_DATE, BUILD_TIME), About dialog, CLAUDE.md
 
 ## Architecture
 

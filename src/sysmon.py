@@ -1554,6 +1554,7 @@ class SystemMonitor(QMainWindow):
         self.always_on_top = False  # Window always on top setting
         self.invert_axis = False  # X-axis inversion for all graphs
         self._loading_preferences = False  # Flag to prevent signal handling during init
+        self._transparency_toggled = False  # Flag to track transparency toggle state
         self.max_points = int((self.time_window * 1000) / self.update_interval)
         
         # Data storage
@@ -2370,6 +2371,8 @@ class SystemMonitor(QMainWindow):
             self.position_window_right()
         elif event.key() == Qt.Key_M:
             self.minimize_window()
+        elif event.key() == Qt.Key_T:
+            self.toggle_transparency()
         else:
             super().keyPressEvent(event)
     
@@ -2437,6 +2440,20 @@ class SystemMonitor(QMainWindow):
             self.showMinimized()
         except Exception as e:
             print(f"Error minimizing window: {e}")
+
+    def toggle_transparency(self):
+        """Toggle window transparency between opaque and 50% transparent"""
+        try:
+            if self._transparency_toggled:
+                # Return to opaque (100%)
+                self.set_window_transparency(1.0)
+                self._transparency_toggled = False
+            else:
+                # Set to 50% transparent
+                self.set_window_transparency(0.5)
+                self._transparency_toggled = True
+        except Exception as e:
+            print(f"Error toggling transparency: {e}")
 
 # Window Geometry Methods
     def closeEvent(self, event):
