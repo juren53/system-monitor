@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.16
-Release: 2025-12-25 1700 CST
+SysMon - PyQtGraph-based System Monitor v0.2.16a
+Release: 2025-12-30 1400 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -16,6 +16,8 @@ import datetime
 import threading
 import time
 from collections import deque
+from urllib.request import urlopen
+from urllib.error import URLError
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                               QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
@@ -88,14 +90,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.16"
-RELEASE_DATE = "2025-12-25"
-RELEASE_TIME = "1700 CST"
+VERSION = "0.2.16a"
+RELEASE_DATE = "2025-12-30"
+RELEASE_TIME = "1400 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
-BUILD_DATE = "2025-12-25"
-BUILD_TIME = "1700 CST"
+BUILD_DATE = "2025-12-30"
+BUILD_TIME = "1400 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -1808,7 +1810,8 @@ class SystemMonitor(QMainWindow):
         html_content = md.convert(markdown_text)
 
         # Get Pygments CSS for syntax highlighting
-        formatter = HtmlFormatter(style='github-dark' if self.is_dark_theme() else 'github')
+        # Use standard Pygments styles: monokai (dark) or default (light)
+        formatter = HtmlFormatter(style='monokai' if self.is_dark_theme() else 'default')
         pygments_css = formatter.get_style_defs('.highlight')
 
         # Build complete HTML document with GitHub-style CSS
@@ -3134,21 +3137,63 @@ class SystemMonitor(QMainWindow):
         self.save_preferences()
     
     # Help Menu Methods
+    def load_document_with_fallback(self, local_path, github_path, doc_name):
+        """
+        Load document from local file first, fallback to GitHub if not found.
+
+        Args:
+            local_path: Path to local file
+            github_path: GitHub raw URL
+            doc_name: Document name for error messages
+
+        Returns:
+            Tuple of (content_string, source_info_string)
+        """
+        # Try local file first
+        try:
+            with open(local_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+                return content, None  # No source info needed for local files
+        except FileNotFoundError:
+            local_error = f"Local file not found: {local_path}"
+        except Exception as e:
+            local_error = f"Error reading local file: {str(e)}"
+
+        # Fallback to GitHub
+        try:
+            with urlopen(github_path, timeout=10) as response:
+                content = response.read().decode('utf-8')
+                source_info = f"\n\n---\n\n*Note: Loaded from GitHub repository (local file not available)*"
+                return content, source_info
+        except URLError as e:
+            github_error = f"Failed to fetch from GitHub: {str(e)}"
+        except Exception as e:
+            github_error = f"Error loading from GitHub: {str(e)}"
+
+        # Both methods failed - return error message
+        error_content = f"""# {doc_name}
+
+Unable to load {doc_name} from local file or GitHub.
+
+**Local Error:** {local_error}
+
+**GitHub Error:** {github_error}
+
+Please check your internet connection or visit the [SysMon GitHub repository](https://github.com/juren53/system-monitor) directly."""
+        return error_content, None
+
     def show_changelog(self):
         """Show changelog dialog with rendered markdown"""
         changelog_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'CHANGELOG.md')
+        github_url = 'https://raw.githubusercontent.com/juren53/system-monitor/main/docs/CHANGELOG.md'
 
-        try:
-            with open(changelog_path, 'r', encoding='utf-8', errors='replace') as f:
-                markdown_content = f.read()
-        except Exception as e:
-            markdown_content = f"""# ChangeLog
+        markdown_content, source_info = self.load_document_with_fallback(
+            changelog_path, github_url, 'ChangeLog'
+        )
 
-Unable to load CHANGELOG.md file.
-
-Error: {str(e)}
-
-Please check the docs/CHANGELOG.md file in the SysMon repository."""
+        # Append source info if loaded from GitHub
+        if source_info:
+            markdown_content += source_info
 
         # Convert markdown to HTML
         html_content = self.render_markdown_to_html(markdown_content)
@@ -3298,18 +3343,15 @@ Please check the docs/CHANGELOG.md file in the SysMon repository."""
     def show_users_guide(self):
         """Show users guide dialog with rendered markdown"""
         users_guide_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'users-guide.md')
+        github_url = 'https://raw.githubusercontent.com/juren53/system-monitor/main/docs/users-guide.md'
 
-        try:
-            with open(users_guide_path, 'r', encoding='utf-8', errors='replace') as f:
-                markdown_content = f.read()
-        except Exception as e:
-            markdown_content = f"""# SysMon Users Guide
+        markdown_content, source_info = self.load_document_with_fallback(
+            users_guide_path, github_url, 'Users Guide'
+        )
 
-Unable to load users guide file.
-
-Error: {str(e)}
-
-Please check the docs/users-guide.md file in the SysMon repository."""
+        # Append source info if loaded from GitHub
+        if source_info:
+            markdown_content += source_info
 
         # Convert markdown to HTML
         html_content = self.render_markdown_to_html(markdown_content)
@@ -3362,17 +3404,15 @@ Please check the docs/users-guide.md file in the SysMon repository."""
     def show_keyboard_shortcuts(self):
         """Show keyboard shortcuts dialog with rendered markdown"""
         shortcuts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'keyboard-shortcuts.md')
+        github_url = 'https://raw.githubusercontent.com/juren53/system-monitor/main/docs/keyboard-shortcuts.md'
 
-        try:
-            with open(shortcuts_path, 'r', encoding='utf-8', errors='replace') as f:
-                markdown_content = f.read()
-        except Exception as e:
-            # Fallback to embedded content if file not found
-            markdown_content = f"""# SysMon Keyboard Shortcuts
+        markdown_content, source_info = self.load_document_with_fallback(
+            shortcuts_path, github_url, 'Keyboard Shortcuts'
+        )
 
-Unable to load keyboard-shortcuts.md file.
-
-Error: {str(e)}"""
+        # Append source info if loaded from GitHub
+        if source_info:
+            markdown_content += source_info
 
         # Convert markdown to HTML
         html_content = self.render_markdown_to_html(markdown_content)

@@ -1,5 +1,44 @@
 # Changelog - sysmon.py
 
+## 2025-12-30 1400 CST - GitHub Fallback for Help Documents  [ v0.2.16a ]
+
+### 🐛 **BUGFIX: Pygments Style Error**
+- **Issue**: `ClassNotFound: Could not find style module 'pygments.styles.github'`
+- **Root Cause**: Non-existent Pygments styles 'github' and 'github-dark' were used
+- **Fix**: Changed to standard Pygments styles:
+  - Dark theme: 'monokai' (instead of 'github-dark')
+  - Light theme: 'default' (instead of 'github')
+- **Location**: `render_markdown_to_html()` method (line 1814)
+- **Impact**: Help menu markdown rendering now works correctly
+
+### 🌐 **Automatic GitHub Fallback for Help Menu**
+- **Feature**: Help documents now automatically load from GitHub if local files are missing
+- **Applies to**:
+  - ChangeLog (docs/CHANGELOG.md)
+  - Users Guide (docs/users-guide.md)
+  - Keyboard Shortcuts (docs/keyboard-shortcuts.md)
+- **User Experience**: Seamless failover with notification when GitHub is used
+- **Benefits**: Always shows latest documentation even if local files damaged/moved
+
+### 📝 **Implementation Details**
+- Added `urllib.request` and `urllib.error` imports for HTTP requests
+- Created `load_document_with_fallback()` helper method:
+  - Tries local file first (fast, no network needed)
+  - Falls back to GitHub raw URL if local file fails
+  - Returns clear error if both methods fail
+- GitHub URLs point to main branch raw content:
+  - `https://raw.githubusercontent.com/juren53/system-monitor/main/docs/...`
+- Appends source notification when loaded from GitHub
+- 10-second timeout for GitHub requests
+
+### 🎯 **Use Cases**
+- Standalone executables without bundled documentation
+- User accidentally deletes/moves docs folder
+- Corrupted local files
+- Always see latest docs from repository
+
+---
+
 ## 2025-12-30 0000 CST - Transparency Toggle Keyboard Shortcut  [ v0.2.16 ]
 
 ### ⌨️ **NEW KEYBOARD SHORTCUT: Transparency Toggle**
