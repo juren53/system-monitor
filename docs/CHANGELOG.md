@@ -1,5 +1,43 @@
 # Changelog - sysmon.py
 
+## 2025-12-31 2100 CST - Real-Time Graph Smoothing  [ v0.2.18 ]
+
+### 📊 **NEW FEATURE: Keyboard-Controlled Graph Smoothing**
+- **Shortcut Keys**: Press **'+'** to increase smoothing, **'-'** to decrease
+- **Smoothing Range**: 1 (no smoothing/raw data) to 20 points (heavy smoothing)
+- **Visual Feedback**: Window title shows current smoothing level for 2 seconds
+- **Persistence**: Smoothing preference saved to preferences.json
+- **Menu Option**: Config → Smoothing Level... for GUI access
+
+### 📝 **Implementation Details**
+- Added simple moving average (SMA) filter to all 5 data series (src/sysmon.py:2258-2280)
+- Created `apply_smoothing()` method for filtering (src/sysmon.py:2265-2280)
+- Added keyboard handlers for +/- keys in `keyPressEvent()` (src/sysmon.py:2423-2426)
+- Created `increase_smoothing()`, `decrease_smoothing()`, `show_smoothing_status()` methods (src/sysmon.py:2316-2344)
+- Status display via temporary window title change (2 seconds)
+- Optional Config menu item: "Smoothing Level..." (src/sysmon.py:2122-2125)
+- Method `change_smoothing_level()` for dialog-based adjustment (src/sysmon.py:2842-2852)
+
+### 🎯 **Use Cases**
+- Reduce noise on busy systems (CPU spikes, disk bursts, network fluctuations)
+- Smooth out high-frequency fluctuations for clearer trend visualization
+- Trade-off: More smoothing = clearer trends but slower response to changes
+- Quick adjustment without leaving main window or opening dialogs
+- Example smoothing levels:
+  - 1 point = Raw data (default, no smoothing)
+  - 5 points = Light smoothing (~1.0s window at 200ms update rate)
+  - 10 points = Medium smoothing (~2.0s window)
+  - 20 points = Heavy smoothing (~4.0s window)
+
+### 🔧 **Technical Details**
+- Algorithm: Simple Moving Average (SMA)
+- Window size: User-adjustable 1-20 data points
+- Applied to: CPU%, Disk Read/Write MB/s, Network Sent/Received MB/s
+- Performance: Negligible overhead (~O(n*w) where n≈100-600, w≤20)
+- Edge handling: Graceful degradation at data start (uses available points)
+
+---
+
 ## 2025-12-31 2000 CST - Quit Keyboard Shortcut  [ v0.2.17c ]
 
 ### ⌨️ **NEW KEYBOARD SHORTCUT: Q Key to Quit**

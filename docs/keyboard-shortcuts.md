@@ -6,6 +6,11 @@
 **↓ Down Arrow**  : Minimize application window to taskbar
 **M Key**         : Minimize application window to taskbar
 **T Key**         : Toggle window transparency on/off
+**Q Key**         : Quit application (close window and exit)
+
+## Graph Control
+**+ Key**         : Increase smoothing (reduce noise, adds slight lag)
+**- Key**         : Decrease smoothing (more responsive, shows more noise)
 
 ## Existing Keyboard Shortcuts
 
