@@ -1,5 +1,37 @@
 # Changelog - sysmon.py
 
+## 2025-12-31 1125 CST - Full Application Theme Support  [ v0.2.18c ]
+
+### 🎨 **NEW FEATURE: Manual Theme Selection with Full UI Theming**
+- **Menu Option**: Config → Theme... opens theme selection dialog
+- **Theme Modes**: Auto (system detection), Light, and Dark
+- **Full Coverage**: Themes now apply to entire application (windows, menus, dialogs, graphs, buttons)
+- **Persistence**: Theme preference saved to preferences.json
+
+### 📝 **Implementation Details**
+- Added `theme_mode` setting: 'auto', 'light', or 'dark' (src/sysmon.py:1564)
+- Created `apply_application_theme()` method with complete QPalette configuration (src/sysmon.py:1782-1833)
+- Dark theme: Dark gray backgrounds (RGB 53,53,53), light text (200,200,200)
+- Light theme: Light gray backgrounds (RGB 240,240,240), dark text (0,0,0)
+- Updated `is_dark_theme()` to respect manual theme override (src/sysmon.py:1768-1780)
+- Modified `setup_pyqtgraph_theme()` and `apply_system_theme_to_plots()` to use centralized theme detection
+- Theme dialog with radio button selection (src/sysmon.py:2918-2989)
+
+### 🎯 **User Benefits**
+- Force dark mode for night-time use regardless of system theme
+- Force light mode for daytime readability in bright environments
+- Auto mode follows system preferences seamlessly
+- Consistent theming across all UI elements (not just graphs)
+- Professional appearance with proper color palettes for buttons, menus, tooltips, highlights
+
+### 🔧 **Technical Details**
+- QPalette controls: Window, WindowText, Base, AlternateBase, ToolTip, Text, Button, ButtonText, Link, Highlight
+- Disabled state colors properly configured for both themes
+- PyQtGraph backgrounds and foregrounds synchronized with Qt palette
+- Theme applies to all dialogs (Process, Disk, Network, About, Help, etc.)
+
+---
+
 ## 2025-12-31 1030 CST - Cross-Platform Markdown Rendering Fix  [ v0.2.18a ]
 
 ### 🐛 **BUGFIX: Inconsistent Help Menu Text Rendering Across Platforms**

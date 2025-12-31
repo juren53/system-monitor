@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.18
-Release: 2025-12-31 2100 CST
+SysMon - PyQtGraph-based System Monitor v0.2.18c
+Release: 2025-12-31 1125 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -91,14 +91,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.18a"
+VERSION = "0.2.18c"
 RELEASE_DATE = "2025-12-31"
-RELEASE_TIME = "1030 CST"
+RELEASE_TIME = "1125 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
 BUILD_DATE = "2025-12-31"
-BUILD_TIME = "1030 CST"
+BUILD_TIME = "1125 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -1561,6 +1561,7 @@ class SystemMonitor(QMainWindow):
         self.smoothing_window = 1  # Number of data points to average (1 = no smoothing)
         self.min_smoothing = 1     # Minimum smoothing (raw data)
         self.max_smoothing = 20    # Maximum smoothing (20-point moving average)
+        self.theme_mode = 'auto'   # Theme mode: 'auto', 'light', or 'dark'
         self.max_points = int((self.time_window * 1000) / self.update_interval)
         
         # Data storage
@@ -1602,11 +1603,8 @@ class SystemMonitor(QMainWindow):
         
     def setup_pyqtgraph_theme(self):
         """Configure PyQtGraph to match system theme"""
-        # Get system palette
-        palette = self.palette()
-        bg_color = palette.color(QPalette.Window)
-        bg_brightness = sum([bg_color.red(), bg_color.green(), bg_color.blue()]) / 3
-        is_dark_theme = bg_brightness < 128
+        # Use the is_dark_theme method which respects manual theme selection
+        is_dark_theme = self.is_dark_theme()
         
         # Apply theme to PyQtGraph global config
         if is_dark_theme:
@@ -1669,9 +1667,9 @@ class SystemMonitor(QMainWindow):
         memory_layout.addWidget(self.swap_label)
         
         main_layout.addLayout(memory_layout)
-        
+
         # Setup plots with system theme
-        self.setup_pyqtgraph_theme()
+        self.apply_application_theme()
         pg.setConfigOptions(antialias=True)
         
         # CPU Plot
@@ -1712,6 +1710,9 @@ class SystemMonitor(QMainWindow):
             lambda evt: self.show_realtime_network() if evt.double() else None)
         main_layout.addWidget(self.net_plot)
 
+        # Apply plot theme now that plots exist
+        self.apply_system_theme_to_plots()
+
         # Connect to state change signals to auto-save when user inverts axes
         # All graphs share the same invert_axis setting
         self.cpu_plot.getPlotItem().getViewBox().sigStateChanged.connect(self.on_axis_changed)
@@ -1735,13 +1736,10 @@ class SystemMonitor(QMainWindow):
         """)
         self.version_label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
         version_layout.addWidget(self.version_label)
-        
+
         main_layout.addLayout(version_layout)
-        
-        # Apply system theme to plots
-        self.apply_system_theme_to_plots()
-        
-        # Load saved graph colors preferences
+
+        # Load saved graph colors preferences (theme already applied earlier)
         self.load_graph_colors_preferences()
         
     def get_dialog_theme_colors(self):
@@ -1769,10 +1767,73 @@ class SystemMonitor(QMainWindow):
 
     def is_dark_theme(self):
         """Check if application is using dark theme"""
+        # Check for manual theme override
+        if self.theme_mode == 'dark':
+            return True
+        elif self.theme_mode == 'light':
+            return False
+        # else: theme_mode == 'auto', use system detection
+
         palette = self.palette()
         bg_color = palette.color(QPalette.Window)
         # Consider dark if background lightness < 128
         return bg_color.lightness() < 128
+
+    def apply_application_theme(self):
+        """Apply theme palette to entire application (not just graphs)"""
+        from PyQt5.QtGui import QColor
+
+        is_dark = self.is_dark_theme()
+        palette = QPalette()
+
+        if is_dark:
+            # Dark theme colors
+            palette.setColor(QPalette.Window, QColor(53, 53, 53))
+            palette.setColor(QPalette.WindowText, QColor(200, 200, 200))
+            palette.setColor(QPalette.Base, QColor(35, 35, 35))
+            palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+            palette.setColor(QPalette.ToolTipBase, QColor(25, 25, 25))
+            palette.setColor(QPalette.ToolTipText, QColor(200, 200, 200))
+            palette.setColor(QPalette.Text, QColor(200, 200, 200))
+            palette.setColor(QPalette.Button, QColor(53, 53, 53))
+            palette.setColor(QPalette.ButtonText, QColor(200, 200, 200))
+            palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
+            palette.setColor(QPalette.Link, QColor(42, 130, 218))
+            palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+            palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+
+            # Disabled colors
+            palette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127, 127, 127))
+            palette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
+            palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(127, 127, 127))
+        else:
+            # Light theme colors
+            palette.setColor(QPalette.Window, QColor(240, 240, 240))
+            palette.setColor(QPalette.WindowText, QColor(0, 0, 0))
+            palette.setColor(QPalette.Base, QColor(255, 255, 255))
+            palette.setColor(QPalette.AlternateBase, QColor(245, 245, 245))
+            palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 220))
+            palette.setColor(QPalette.ToolTipText, QColor(0, 0, 0))
+            palette.setColor(QPalette.Text, QColor(0, 0, 0))
+            palette.setColor(QPalette.Button, QColor(240, 240, 240))
+            palette.setColor(QPalette.ButtonText, QColor(0, 0, 0))
+            palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
+            palette.setColor(QPalette.Link, QColor(0, 0, 255))
+            palette.setColor(QPalette.Highlight, QColor(0, 120, 215))
+            palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+
+            # Disabled colors
+            palette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(120, 120, 120))
+            palette.setColor(QPalette.Disabled, QPalette.Text, QColor(120, 120, 120))
+            palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(120, 120, 120))
+
+        # Apply palette to the application
+        QApplication.instance().setPalette(palette)
+
+        # Also apply to PyQtGraph theme and plots (if they exist)
+        self.setup_pyqtgraph_theme()
+        if hasattr(self, 'cpu_plot'):
+            self.apply_system_theme_to_plots()
 
     def render_markdown_to_html(self, markdown_text):
         """
@@ -1961,11 +2022,8 @@ class SystemMonitor(QMainWindow):
 
     def apply_system_theme_to_plots(self):
         """Apply system theme colors to plots"""
-        # Get system palette
-        palette = self.palette()
-        bg_color = palette.color(QPalette.Window)
-        bg_brightness = sum([bg_color.red(), bg_color.green(), bg_color.blue()]) / 3
-        is_dark_theme = bg_brightness < 128
+        # Use the is_dark_theme method which respects manual theme selection
+        is_dark_theme = self.is_dark_theme()
         
         # Set theme colors
         if is_dark_theme:
@@ -2123,6 +2181,11 @@ class SystemMonitor(QMainWindow):
         smoothing_action.setStatusTip('Configure graph smoothing level')
         smoothing_action.triggered.connect(self.change_smoothing_level)
         config_menu.addAction(smoothing_action)
+
+        theme_action = QAction('T&heme...', self)
+        theme_action.setStatusTip('Select theme mode (Auto/Light/Dark)')
+        theme_action.triggered.connect(self.change_theme)
+        config_menu.addAction(theme_action)
 
         graph_colors_action = QAction('&Graph Colors...', self)
         graph_colors_action.setStatusTip('Customize graph colors')
@@ -2592,6 +2655,7 @@ class SystemMonitor(QMainWindow):
                     self.always_on_top = prefs.get('always_on_top', False)
                     self.invert_axis = prefs.get('invert_axis', False)
                     self.smoothing_window = prefs.get('smoothing_window', 1)
+                    self.theme_mode = prefs.get('theme_mode', 'auto')
 
                     # Apply loaded preferences
                     if hasattr(self, 'timer'):
@@ -2676,7 +2740,8 @@ class SystemMonitor(QMainWindow):
                 'transparency': self.transparency,
                 'always_on_top': self.always_on_top,
                 'invert_axis': self.invert_axis,
-                'smoothing_window': self.smoothing_window
+                'smoothing_window': self.smoothing_window,
+                'theme_mode': self.theme_mode
             }
             
             with open(self.preferences_file, 'w') as f:
@@ -2850,6 +2915,79 @@ class SystemMonitor(QMainWindow):
             self.smoothing_window = level
             self.show_smoothing_status()
             self.save_preferences()
+
+    def change_theme(self):
+        """Configure theme mode (Auto/Light/Dark)"""
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QRadioButton, QDialogButtonBox, QLabel, QGroupBox
+
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Theme Selection")
+        dialog.setModal(True)
+        dialog.resize(400, 250)
+
+        layout = QVBoxLayout()
+
+        # Description
+        desc_label = QLabel(
+            "Select the theme mode for SysMon:\n\n"
+            "• Auto: Automatically detect system theme\n"
+            "• Light: Force light theme\n"
+            "• Dark: Force dark theme"
+        )
+        desc_label.setWordWrap(True)
+        layout.addWidget(desc_label)
+
+        # Radio buttons group
+        group_box = QGroupBox("Theme Mode")
+        group_layout = QVBoxLayout()
+
+        self.theme_auto_radio = QRadioButton("Auto (System Detection)")
+        self.theme_light_radio = QRadioButton("Light")
+        self.theme_dark_radio = QRadioButton("Dark")
+
+        # Set current selection
+        if self.theme_mode == 'auto':
+            self.theme_auto_radio.setChecked(True)
+        elif self.theme_mode == 'light':
+            self.theme_light_radio.setChecked(True)
+        elif self.theme_mode == 'dark':
+            self.theme_dark_radio.setChecked(True)
+
+        group_layout.addWidget(self.theme_auto_radio)
+        group_layout.addWidget(self.theme_light_radio)
+        group_layout.addWidget(self.theme_dark_radio)
+        group_box.setLayout(group_layout)
+        layout.addWidget(group_box)
+
+        # Dialog buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(dialog.accept)
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+
+        dialog.setLayout(layout)
+
+        # Show dialog and apply if accepted
+        if dialog.exec_() == QDialog.Accepted:
+            # Determine selected theme
+            old_theme = self.theme_mode
+            if self.theme_auto_radio.isChecked():
+                self.theme_mode = 'auto'
+            elif self.theme_light_radio.isChecked():
+                self.theme_mode = 'light'
+            elif self.theme_dark_radio.isChecked():
+                self.theme_mode = 'dark'
+
+            # Apply theme if changed
+            if old_theme != self.theme_mode:
+                self.apply_application_theme()
+                self.save_preferences()
+                QMessageBox.information(
+                    self,
+                    "Theme Changed",
+                    f"Theme set to: {self.theme_mode.capitalize()}\n\nThe new theme has been applied."
+                )
 
     def customize_graph_colors(self):
         """Enhanced graph colors customization with background/grid support"""
