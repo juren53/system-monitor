@@ -1,5 +1,26 @@
 # Changelog - sysmon.py
 
+## 2025-12-31 1800 CST - Issue Tracker Menu Item  [ v0.2.17b ]
+
+### 🔗 **NEW HELP MENU ITEM: Issue Tracker**
+- **Menu Location**: Help → Issue Tracker (positioned above About)
+- **Action**: Opens GitHub issues page in default web browser
+- **URL**: https://github.com/juren53/system-monitor/issues
+- **Keyboard Shortcut**: Alt+I (via menu accelerator)
+
+### 📝 **Implementation Details**
+- Added `webbrowser` module import (src/sysmon.py:18)
+- Created Issue Tracker menu action (src/sysmon.py:2158-2161)
+- Implemented `show_issue_tracker()` method (src/sysmon.py:3417-3428)
+- Error handling with fallback message box showing URL
+
+### 🎯 **User Benefits**
+- Quick access to report bugs or suggest features
+- Direct link to GitHub issue tracker from Help menu
+- Graceful fallback if browser fails to open
+
+---
+
 ## 2025-12-30 1400 CST - GitHub Fallback for Help Documents  [ v0.2.16a ]
 
 ### 🐛 **BUGFIX: Pygments Style Error**
@@ -36,6 +57,25 @@
 - User accidentally deletes/moves docs folder
 - Corrupted local files
 - Always see latest docs from repository
+
+---
+
+## 2025-12-30 0700 CST - Down Arrow Minimize Shortcut  [ v0.2.17 ]
+
+### ⌨️ **NEW KEYBOARD SHORTCUT: Down Arrow Minimize**
+- **Shortcut Key**: Press **Down Arrow** to minimize window
+- **Alternate to 'M'**: Provides second keyboard option for minimize action
+- **Same Behavior**: Identical functionality to existing 'm' key shortcut
+
+### 📝 **Implementation Details**
+- Added `Qt.Key_Down` handler in `keyPressEvent()` method (src/sysmon.py:2374-2375)
+- Calls existing `minimize_window()` method
+- No state changes or new methods required
+
+### 🎯 **Use Cases**
+- Quick minimize using arrow key (more intuitive for some users)
+- Complements existing left/right arrow window positioning
+- Consistent keyboard navigation experience
 
 ---
 

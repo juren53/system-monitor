@@ -3,7 +3,9 @@
 ## Window Positioning Navigation
 **← Left Arrow**  : Move window to left side of current screen (preserves window size)
 **→ Right Arrow** : Move window to right side of current screen (preserves window size)
-**m Key**         : Minimize application window to taskbar
+**↓ Down Arrow**  : Minimize application window to taskbar
+**M Key**         : Minimize application window to taskbar
+**T Key**         : Toggle window transparency on/off
 
 ## Existing Keyboard Shortcuts
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.16a
-Release: 2025-12-30 1400 CST
+SysMon - PyQtGraph-based System Monitor v0.2.17b
+Release: 2025-12-31 1800 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -15,6 +15,7 @@ import platform
 import datetime
 import threading
 import time
+import webbrowser
 from collections import deque
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -90,14 +91,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.16a"
-RELEASE_DATE = "2025-12-30"
-RELEASE_TIME = "1400 CST"
+VERSION = "0.2.17b"
+RELEASE_DATE = "2025-12-31"
+RELEASE_TIME = "1800 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
-BUILD_DATE = "2025-12-30"
-BUILD_TIME = "1400 CST"
+BUILD_DATE = "2025-12-31"
+BUILD_TIME = "1800 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -2156,7 +2157,12 @@ class SystemMonitor(QMainWindow):
         help_menu.addAction(navigation_action)
         
         help_menu.addSeparator()
-        
+
+        issue_tracker_action = QAction('&Issue Tracker', self)
+        issue_tracker_action.setStatusTip('Report issues or suggest features on GitHub')
+        issue_tracker_action.triggered.connect(self.show_issue_tracker)
+        help_menu.addAction(issue_tracker_action)
+
         about_action = QAction('&About', self)
         about_action.setStatusTip('About SysMon')
         about_action.triggered.connect(self.show_about)
@@ -2373,6 +2379,8 @@ class SystemMonitor(QMainWindow):
         elif event.key() == Qt.Key_Right:
             self.position_window_right()
         elif event.key() == Qt.Key_M:
+            self.minimize_window()
+        elif event.key() == Qt.Key_Down:
             self.minimize_window()
         elif event.key() == Qt.Key_T:
             self.toggle_transparency()
@@ -3445,7 +3453,20 @@ Please check your internet connection or visit the [SysMon GitHub repository](ht
         dialog.setLayout(layout)
 
         dialog.exec_()
-    
+
+    def show_issue_tracker(self):
+        """Open SysMon issue tracker in default web browser"""
+        try:
+            webbrowser.open('https://github.com/juren53/system-monitor/issues')
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                'Unable to Open Browser',
+                f'Could not open issue tracker in browser.\n\n'
+                f'Please visit:\nhttps://github.com/juren53/system-monitor/issues\n\n'
+                f'Error: {str(e)}'
+            )
+
 def set_application_icon(app):
     """Set application icon with proper error handling"""
     import os
