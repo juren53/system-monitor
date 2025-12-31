@@ -91,14 +91,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.18"
+VERSION = "0.2.18a"
 RELEASE_DATE = "2025-12-31"
-RELEASE_TIME = "2100 CST"
+RELEASE_TIME = "1030 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
 BUILD_DATE = "2025-12-31"
-BUILD_TIME = "2100 CST"
+BUILD_TIME = "1030 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -1828,7 +1828,7 @@ class SystemMonitor(QMainWindow):
         /* Base styles */
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
-            font-size: 14px;
+            font-size: 10pt;
             line-height: 1.6;
             color: {theme_colors['text']};
             background-color: {theme_colors['background']};
