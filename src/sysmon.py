@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.17b
-Release: 2025-12-31 1800 CST
+SysMon - PyQtGraph-based System Monitor v0.2.17c
+Release: 2025-12-31 2000 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -91,14 +91,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.17b"
+VERSION = "0.2.17c"
 RELEASE_DATE = "2025-12-31"
-RELEASE_TIME = "1800 CST"
+RELEASE_TIME = "2000 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
 BUILD_DATE = "2025-12-31"
-BUILD_TIME = "1800 CST"
+BUILD_TIME = "2000 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -2384,6 +2384,8 @@ class SystemMonitor(QMainWindow):
             self.minimize_window()
         elif event.key() == Qt.Key_T:
             self.toggle_transparency()
+        elif event.key() == Qt.Key_Q:
+            self.close()
         else:
             super().keyPressEvent(event)
     

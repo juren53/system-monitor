@@ -1,5 +1,24 @@
 # Changelog - sysmon.py
 
+## 2025-12-31 2000 CST - Quit Keyboard Shortcut  [ v0.2.17c ]
+
+### ⌨️ **NEW KEYBOARD SHORTCUT: Q Key to Quit**
+- **Shortcut Key**: Press **'Q'** to quit the application
+- **Action**: Closes the SysMon window and exits the application
+- **Integration**: Follows same pattern as existing keyboard shortcuts ('M' for minimize, 'T' for transparency)
+
+### 📝 **Implementation Details**
+- Added `Qt.Key_Q` handler in `keyPressEvent()` method (src/sysmon.py:2387-2388)
+- Calls `self.close()` to trigger clean shutdown
+- No additional state tracking required
+
+### 🎯 **Use Cases**
+- Quick exit without mouse interaction
+- Keyboard-driven workflow efficiency
+- Consistent with standard 'Q' quit convention in many applications
+
+---
+
 ## 2025-12-31 1800 CST - Issue Tracker Menu Item  [ v0.2.17b ]
 
 ### 🔗 **NEW HELP MENU ITEM: Issue Tracker**
