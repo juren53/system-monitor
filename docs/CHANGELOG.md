@@ -1,5 +1,28 @@
 # Changelog - sysmon.py
 
+## 2025-12-31 1030 CST - Cross-Platform Markdown Rendering Fix  [ v0.2.18a ]
+
+### 🐛 **BUGFIX: Inconsistent Help Menu Text Rendering Across Platforms**
+- **Issue**: Help menu documents (ChangeLog, Users Guide, Keyboard Shortcuts) rendered with disproportionate text sizes on Windows 11
+- **Symptom**: Body text appeared extremely small while headers remained normal size on Windows; Linux LMDE showed proper proportions
+- **Root Cause**: CSS used pixel-based font sizing (`14px`) which doesn't scale consistently with different platform DPI settings
+- **Fix**: Changed base font size from `14px` to `10pt` in `render_markdown_to_html()` method (src/sysmon.py:1831)
+- **Impact**: All Help menu documents now render proportionally on both Windows and Linux platforms
+
+### 📝 **Technical Details**
+- **Point units (`pt`)** are device-independent and Qt handles DPI scaling automatically
+- **Pixel units (`px`)** are absolute and don't account for screen DPI differences
+- Windows 11 high-DPI scaling caused `14px` to render too small
+- Headers used relative `em` units, so they scaled proportionally to each other but not to tiny body text
+- Solution ensures consistent rendering across platforms while maintaining readability
+
+### 🎯 **User Benefits**
+- Consistent, readable Help documentation on all platforms
+- No more squinting at tiny text on high-DPI Windows displays
+- Professional appearance maintained across Windows, Linux, and macOS
+
+---
+
 ## 2025-12-31 2100 CST - Real-Time Graph Smoothing  [ v0.2.18 ]
 
 ### 📊 **NEW FEATURE: Keyboard-Controlled Graph Smoothing**
