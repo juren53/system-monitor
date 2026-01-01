@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.18c
-Release: 2025-12-31 1125 CST
+SysMon - PyQtGraph-based System Monitor v0.2.18d
+Release: 2025-12-31 1200 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -91,14 +91,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.18c"
+VERSION = "0.2.18d"
 RELEASE_DATE = "2025-12-31"
-RELEASE_TIME = "1125 CST"
+RELEASE_TIME = "1200 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
 BUILD_DATE = "2025-12-31"
-BUILD_TIME = "1125 CST"
+BUILD_TIME = "1200 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -2207,12 +2207,17 @@ class SystemMonitor(QMainWindow):
         
         # Help Menu
         help_menu = menubar.addMenu('&Help')
-        
+
         changelog_action = QAction('&ChangeLog', self)
         changelog_action.setStatusTip('View SysMon development history and changes')
         changelog_action.triggered.connect(self.show_changelog)
         help_menu.addAction(changelog_action)
-        
+
+        changelog_github_action = QAction('ChangeLog (&GitHub)', self)
+        changelog_github_action.setStatusTip('Open ChangeLog on GitHub in web browser')
+        changelog_github_action.triggered.connect(self.show_changelog_github)
+        help_menu.addAction(changelog_github_action)
+
         help_menu.addSeparator()
         
         users_guide_action = QAction('&Users Guide', self)
@@ -2387,6 +2392,9 @@ class SystemMonitor(QMainWindow):
             self.smoothing_window += 1
             self.show_smoothing_status()
             self.save_preferences()
+        else:
+            # Already at maximum - show feedback
+            self.show_smoothing_limit_status("maximum")
 
     def decrease_smoothing(self):
         """Decrease smoothing window by 1 point"""
@@ -2394,6 +2402,9 @@ class SystemMonitor(QMainWindow):
             self.smoothing_window -= 1
             self.show_smoothing_status()
             self.save_preferences()
+        else:
+            # Already at minimum - show feedback
+            self.show_smoothing_limit_status("minimum")
 
     def show_smoothing_status(self):
         """Display current smoothing level as status message"""
@@ -2403,6 +2414,21 @@ class SystemMonitor(QMainWindow):
             # Calculate approximate time window for smoothing
             time_span = (self.smoothing_window * self.update_interval) / 1000
             status_msg = f"Smoothing: {self.smoothing_window}-point ({time_span:.2f}s window)"
+
+        # Display in window title briefly
+        original_title = self.windowTitle()
+        self.setWindowTitle(f"SysMon - {status_msg}")
+
+        # Reset title after 2 seconds
+        QTimer.singleShot(2000, lambda: self.setWindowTitle(original_title))
+
+    def show_smoothing_limit_status(self, limit_type):
+        """Display feedback when user tries to exceed smoothing limits"""
+        if limit_type == "minimum":
+            status_msg = f"Smoothing: Already at MINIMUM ({self.min_smoothing}-point)"
+        else:  # maximum
+            time_span = (self.max_smoothing * self.update_interval) / 1000
+            status_msg = f"Smoothing: Already at MAXIMUM ({self.max_smoothing}-point / {time_span:.2f}s)"
 
         # Display in window title briefly
         original_title = self.windowTitle()
@@ -3692,6 +3718,19 @@ Please check your internet connection or visit the [SysMon GitHub repository](ht
                 'Unable to Open Browser',
                 f'Could not open issue tracker in browser.\n\n'
                 f'Please visit:\nhttps://github.com/juren53/system-monitor/issues\n\n'
+                f'Error: {str(e)}'
+            )
+
+    def show_changelog_github(self):
+        """Open SysMon ChangeLog on GitHub in default web browser"""
+        try:
+            webbrowser.open('https://github.com/juren53/system-monitor/blob/main/docs/CHANGELOG.md')
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                'Unable to Open Browser',
+                f'Could not open ChangeLog in browser.\n\n'
+                f'Please visit:\nhttps://github.com/juren53/system-monitor/blob/main/docs/CHANGELOG.md\n\n'
                 f'Error: {str(e)}'
             )
 

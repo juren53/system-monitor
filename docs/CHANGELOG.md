@@ -1,5 +1,29 @@
 # Changelog - sysmon.py
 
+## 2025-12-31 1200 CST - Enhanced Smoothing Control Feedback  [ v0.2.18d ]
+
+### ✨ **ENHANCEMENT: User Feedback for Smoothing Limits**
+- **Issue**: No visual feedback when pressing '-' key at minimum smoothing level (1-point)
+- **Fix**: Added limit detection feedback for both minimum and maximum smoothing boundaries
+- **Behavior**: Window title now displays clear messages when limits are reached:
+  - Minimum: "Smoothing: Already at MINIMUM (1-point)"
+  - Maximum: "Smoothing: Already at MAXIMUM (20-point / 4.00s)"
+- **Duration**: Feedback displays for 2 seconds (same as normal smoothing status)
+
+### 📝 **Implementation Details**
+- Modified `decrease_smoothing()` to show feedback when at minimum (src/sysmon.py:2394)
+- Modified `increase_smoothing()` to show feedback when at maximum (src/sysmon.py:2384)
+- Added new `show_smoothing_limit_status()` method (src/sysmon.py:2420)
+- Uses same UI pattern as existing `show_smoothing_status()` for consistency
+
+### 🎯 **User Benefits**
+- Clear confirmation that key press was registered but limit prevents further adjustment
+- Prevents confusion about whether keyboard input is working
+- Consistent feedback mechanism matching existing smoothing status messages
+- Improved user experience with responsive visual feedback
+
+---
+
 ## 2025-12-31 1125 CST - Full Application Theme Support  [ v0.2.18c ]
 
 ### 🎨 **NEW FEATURE: Manual Theme Selection with Full UI Theming**
