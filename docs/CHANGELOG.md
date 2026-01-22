@@ -1,5 +1,37 @@
 # Changelog - sysmon.py
 
+## 2026-01-22 1400 CST - Adjustable Graph Line Thickness [ v0.2.20 ]
+
+### 🆕 **NEW FEATURE: User-Adjustable Graph Line Thickness**
+- **Menu Item**: Config → Line Thickness... opens adjustment dialog
+- **Thickness Range**: Adjustable from 1 to 10 pixels (default: 2px)
+- **Visual Preview**: Dialog shows sample line thickness before applying
+- **Immediate Effect**: All 5 graph curves update instantly on Apply
+- **Persistent Setting**: Thickness preference saved to preferences.json
+
+### 📝 **Implementation Details**
+- **New Instance Variable**: `self.line_thickness` stores current thickness setting
+- **Dialog Interface**: QSpinBox with 1-10 range, visual preview, Apply/Cancel buttons
+- **Apply Method**: `apply_line_thickness()` rebuilds pens for all curves with new width
+- **Save/Load**: Preference persisted in preferences.json and loaded on startup
+
+### 🎯 **User Benefits**
+- Customize graph line visibility for different monitor sizes/resolutions
+- Thicker lines (3-5px) improve visibility on high-DPI displays
+- Thinner lines (1px) show more detail on standard displays
+- Personal preference saved and restored automatically
+
+### 🔧 **Technical Details**
+- All `pg.mkPen()` calls now use `width=self.line_thickness` instead of hardcoded `2`
+- Theme application and color customization respect line thickness setting
+- Consistent thickness across CPU, Disk Read/Write, and Network Send/Receive curves
+
+### 📐 **Files Modified**
+- **`src/sysmon.py`**: Added line thickness system (~120 lines)
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
 ## 2026-01-01 1200 CST - GitHub Version Checking Integration [ v0.2.19 ]
 
 ### 🆕 **NEW FEATURE: Complete GitHub Version Checking System**

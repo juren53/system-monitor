@@ -100,14 +100,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.19"
-RELEASE_DATE = "2026-01-01"
-RELEASE_TIME = "1200 CST"
+VERSION = "0.2.20"
+RELEASE_DATE = "2026-01-22"
+RELEASE_TIME = "1400 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
-BUILD_DATE = "2026-01-01"
-BUILD_TIME = "1200 CST"
+BUILD_DATE = "2026-01-22"
+BUILD_TIME = "1400 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -1571,7 +1571,8 @@ class SystemMonitor(QMainWindow):
         self.min_smoothing = 1     # Minimum smoothing (raw data)
         self.max_smoothing = 20    # Maximum smoothing (20-point moving average)
         self.theme_mode = 'auto'   # Theme mode: 'auto', 'light', or 'dark'
-        
+        self.line_thickness = 2    # Graph line thickness (1-10, default 2)
+
         # Update checking configuration
         self.auto_check_updates = False  # Auto-check for updates on startup
         self.last_update_check = 0  # Timestamp of last update check
@@ -1698,7 +1699,7 @@ class SystemMonitor(QMainWindow):
         self.cpu_plot.setYRange(0, 100)
         self.cpu_plot.setXRange(-self.time_window, 0)
         self.cpu_plot.showGrid(x=True, y=True, alpha=0.3)
-        self.cpu_curve = self.cpu_plot.plot(pen=pg.mkPen(color='#00ff00', width=2))
+        self.cpu_curve = self.cpu_plot.plot(pen=pg.mkPen(color='#00ff00', width=self.line_thickness))
         self.cpu_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_realtime_processes('cpu') if evt.double() else None)
         main_layout.addWidget(self.cpu_plot)
@@ -1709,8 +1710,8 @@ class SystemMonitor(QMainWindow):
         self.disk_plot.setLabel('bottom', 'Time', units='s')
         self.disk_plot.setXRange(-self.time_window, 0)
         self.disk_plot.showGrid(x=True, y=True, alpha=0.3)
-        self.disk_read_curve = self.disk_plot.plot(pen=pg.mkPen(color='#ff6b6b', width=2), name='Read')
-        self.disk_write_curve = self.disk_plot.plot(pen=pg.mkPen(color='#4ecdc4', width=2), name='Write')
+        self.disk_read_curve = self.disk_plot.plot(pen=pg.mkPen(color='#ff6b6b', width=self.line_thickness), name='Read')
+        self.disk_write_curve = self.disk_plot.plot(pen=pg.mkPen(color='#4ecdc4', width=self.line_thickness), name='Write')
         self.disk_plot.addLegend()
         self.disk_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_realtime_disk() if evt.double() else None)
@@ -1722,8 +1723,8 @@ class SystemMonitor(QMainWindow):
         self.net_plot.setLabel('bottom', 'Time', units='s')
         self.net_plot.setXRange(-self.time_window, 0)
         self.net_plot.showGrid(x=True, y=True, alpha=0.3)
-        self.net_sent_curve = self.net_plot.plot(pen=pg.mkPen(color='#ff9ff3', width=2), name='Sent')
-        self.net_recv_curve = self.net_plot.plot(pen=pg.mkPen(color='#54a0ff', width=2), name='Received')
+        self.net_sent_curve = self.net_plot.plot(pen=pg.mkPen(color='#ff9ff3', width=self.line_thickness), name='Sent')
+        self.net_recv_curve = self.net_plot.plot(pen=pg.mkPen(color='#54a0ff', width=self.line_thickness), name='Received')
         self.net_plot.addLegend()
         self.net_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_realtime_network() if evt.double() else None)
@@ -1760,7 +1761,10 @@ class SystemMonitor(QMainWindow):
 
         # Load saved graph colors preferences (theme already applied earlier)
         self.load_graph_colors_preferences()
-        
+
+        # Load saved line thickness preference
+        self.load_line_thickness_preference()
+
     def get_dialog_theme_colors(self):
         """Get theme-appropriate colors for dialogs"""
         # Get system palette
@@ -2079,23 +2083,23 @@ class SystemMonitor(QMainWindow):
             self.net_plot.setBackground((240, 240, 240))
         
         # Apply colors to CPU plot
-        self.cpu_curve.setPen(pg.mkPen(color=cpu_color, width=2))
+        self.cpu_curve.setPen(pg.mkPen(color=cpu_color, width=self.line_thickness))
         self.cpu_plot.getAxis('left').setPen(axis_color)
         self.cpu_plot.getAxis('bottom').setPen(axis_color)
         self.cpu_plot.getAxis('left').setTextPen(text_color)
         self.cpu_plot.getAxis('bottom').setTextPen(text_color)
-        
+
         # Apply colors to Disk plot
-        self.disk_read_curve.setPen(pg.mkPen(color=disk_read_color, width=2))
-        self.disk_write_curve.setPen(pg.mkPen(color=disk_write_color, width=2))
+        self.disk_read_curve.setPen(pg.mkPen(color=disk_read_color, width=self.line_thickness))
+        self.disk_write_curve.setPen(pg.mkPen(color=disk_write_color, width=self.line_thickness))
         self.disk_plot.getAxis('left').setPen(axis_color)
         self.disk_plot.getAxis('bottom').setPen(axis_color)
         self.disk_plot.getAxis('left').setTextPen(text_color)
         self.disk_plot.getAxis('bottom').setTextPen(text_color)
-        
+
         # Apply colors to Network plot
-        self.net_sent_curve.setPen(pg.mkPen(color=net_sent_color, width=2))
-        self.net_recv_curve.setPen(pg.mkPen(color=net_recv_color, width=2))
+        self.net_sent_curve.setPen(pg.mkPen(color=net_sent_color, width=self.line_thickness))
+        self.net_recv_curve.setPen(pg.mkPen(color=net_recv_color, width=self.line_thickness))
         self.net_plot.getAxis('left').setPen(axis_color)
         self.net_plot.getAxis('bottom').setPen(axis_color)
         self.net_plot.getAxis('left').setTextPen(text_color)
@@ -2211,7 +2215,12 @@ class SystemMonitor(QMainWindow):
         graph_colors_action.setShortcut('Ctrl+G')  # Add keyboard shortcut
         graph_colors_action.triggered.connect(self.customize_graph_colors)
         config_menu.addAction(graph_colors_action)
-        
+
+        line_thickness_action = QAction('Line &Thickness...', self)
+        line_thickness_action.setStatusTip('Adjust graph line thickness')
+        line_thickness_action.triggered.connect(self.customize_line_thickness)
+        config_menu.addAction(line_thickness_action)
+
         config_menu.addSeparator()
         
         transparency_action = QAction('&Transparency...', self)
@@ -3196,7 +3205,7 @@ class SystemMonitor(QMainWindow):
     
     def apply_color_to_element(self, element, color):
         """Apply color to specific graph element"""
-        color_pen = pg.mkPen(color=color, width=2)
+        color_pen = pg.mkPen(color=color, width=self.line_thickness)
         
         if element == "CPU Usage Curve":
             self.cpu_curve.setPen(color_pen)
@@ -3236,7 +3245,131 @@ class SystemMonitor(QMainWindow):
         
         # Reset background and grid to theme defaults
         self.apply_system_theme_to_plots()
-    
+
+    def customize_line_thickness(self):
+        """Open dialog to adjust graph line thickness"""
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox, QPushButton, QFrame
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Line Thickness")
+        dialog.setModal(True)
+        dialog.setMinimumWidth(300)
+
+        layout = QVBoxLayout()
+
+        # Description
+        desc_label = QLabel("Adjust the thickness of graph lines (1-10 pixels):")
+        layout.addWidget(desc_label)
+
+        # Spinbox for thickness
+        thickness_layout = QHBoxLayout()
+        thickness_label = QLabel("Thickness:")
+        thickness_layout.addWidget(thickness_label)
+
+        self.thickness_spinbox = QSpinBox()
+        self.thickness_spinbox.setRange(1, 10)
+        self.thickness_spinbox.setValue(self.line_thickness)
+        self.thickness_spinbox.setSuffix(" px")
+        thickness_layout.addWidget(self.thickness_spinbox)
+        thickness_layout.addStretch()
+        layout.addLayout(thickness_layout)
+
+        # Preview frame
+        preview_frame = QFrame()
+        preview_frame.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
+        preview_frame.setMinimumHeight(60)
+        preview_layout = QVBoxLayout(preview_frame)
+
+        self.preview_label = QLabel()
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        self.update_thickness_preview()
+        preview_layout.addWidget(self.preview_label)
+        layout.addWidget(preview_frame)
+
+        # Connect spinbox to preview update
+        self.thickness_spinbox.valueChanged.connect(self.update_thickness_preview)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        apply_btn = QPushButton("Apply")
+        apply_btn.clicked.connect(lambda: self.apply_line_thickness_from_dialog(dialog))
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(dialog.reject)
+        button_layout.addStretch()
+        button_layout.addWidget(apply_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def update_thickness_preview(self):
+        """Update the preview label to show sample line thickness"""
+        thickness = self.thickness_spinbox.value()
+        # Create a visual representation using Unicode block characters
+        line_char = "━" * 20  # Heavy horizontal line
+        self.preview_label.setText(f"<span style='font-size: {8 + thickness}pt;'>{line_char}</span>")
+        self.preview_label.setToolTip(f"Preview: {thickness}px thickness")
+
+    def apply_line_thickness_from_dialog(self, dialog):
+        """Apply the selected line thickness and close dialog"""
+        self.line_thickness = self.thickness_spinbox.value()
+        self.apply_line_thickness()
+        self.save_line_thickness_preference()
+        dialog.accept()
+
+    def apply_line_thickness(self):
+        """Apply current line thickness to all graph curves"""
+        # Get current colors from each curve
+        cpu_color = self.cpu_curve.opts['pen'].color()
+        disk_read_color = self.disk_read_curve.opts['pen'].color()
+        disk_write_color = self.disk_write_curve.opts['pen'].color()
+        net_sent_color = self.net_sent_curve.opts['pen'].color()
+        net_recv_color = self.net_recv_curve.opts['pen'].color()
+
+        # Rebuild pens with new thickness
+        self.cpu_curve.setPen(pg.mkPen(color=cpu_color, width=self.line_thickness))
+        self.disk_read_curve.setPen(pg.mkPen(color=disk_read_color, width=self.line_thickness))
+        self.disk_write_curve.setPen(pg.mkPen(color=disk_write_color, width=self.line_thickness))
+        self.net_sent_curve.setPen(pg.mkPen(color=net_sent_color, width=self.line_thickness))
+        self.net_recv_curve.setPen(pg.mkPen(color=net_recv_color, width=self.line_thickness))
+
+    def save_line_thickness_preference(self):
+        """Save line thickness preference to config file"""
+        try:
+            # Load existing preferences
+            preferences = {}
+            if os.path.exists(self.preferences_file):
+                with open(self.preferences_file, 'r') as f:
+                    preferences = json.load(f)
+
+            # Save line thickness
+            preferences['line_thickness'] = self.line_thickness
+
+            # Write back to file
+            with open(self.preferences_file, 'w') as f:
+                json.dump(preferences, f, indent=4)
+
+        except Exception as e:
+            print(f"Failed to save line thickness preference: {e}")
+
+    def load_line_thickness_preference(self):
+        """Load saved line thickness preference and apply it"""
+        try:
+            if os.path.exists(self.preferences_file):
+                with open(self.preferences_file, 'r') as f:
+                    preferences = json.load(f)
+
+                if 'line_thickness' in preferences:
+                    self.line_thickness = preferences['line_thickness']
+                    # Clamp to valid range
+                    self.line_thickness = max(1, min(10, self.line_thickness))
+                    self.apply_line_thickness()
+                    print(f"✅ Loaded line thickness preference: {self.line_thickness}px")
+
+        except Exception as e:
+            print(f"Failed to load line thickness preference: {e}")
+
     def get_current_graph_colors(self):
         """Get current colors from all plot elements"""
         try:
