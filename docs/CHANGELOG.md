@@ -1,5 +1,23 @@
 # Changelog - sysmon.py
 
+## 2026-02-03 0900 CST - Project Housekeeping [ v0.2.20a ]
+
+### Changed
+- **Project housekeeping** — moved plan, doc, session, and prompt files into `notes/` directory for a cleaner project root
+- **WARP.md** — renamed to `AGENTS.md` and updated header to address AI coding assistants generally
+- **Utility scripts** — moved `fix_indentation.py`, `force-icon-refresh.sh`, and `github_version_checker.py` to `scripts/`
+- **Filename typo** — renamed `DOC_GitHub_Verion_Checker.md` to `DOC_GitHub_Version_Checker.md`
+
+### Removed
+- `nul` — accidental Windows artifact
+- `-p` — empty directory from accidental `mkdir -p`
+- `sessions/` — emptied and removed (content moved to `notes/`)
+
+### Other
+- Added `.claude/settings.local.json` to `.gitignore`
+
+---
+
 ## 2026-01-22 1400 CST - Adjustable Graph Line Thickness [ v0.2.20 ]
 
 ### 🆕 **NEW FEATURE: User-Adjustable Graph Line Thickness**
