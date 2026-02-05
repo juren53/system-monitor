@@ -1,5 +1,37 @@
 # Changelog - sysmon.py
 
+## 2026-02-04 1847 CST - Icon Manager Module Integration [ v0.3.0 ]
+
+### NEW FEATURE: Centralized Icon Management
+- **Integrated Icon_Manager_Module** — all icon loading now goes through `IconLoader`, replacing ad-hoc path searches with a single source of truth
+- **Cross-platform icon selection** — automatically uses `.ico` (Windows), `.icns` (macOS), or multi-resolution PNGs (Linux)
+- **Multi-resolution icon assets** — generated `app_16x16.png` through `app_256x256.png` from source `ICON_SysMon.png` for crisp display at every size
+- **Windows taskbar fix** — `set_taskbar_icon()` sets per-window AppUserModelID via COM, preventing the generic Python icon on the Windows taskbar
+- **Linux desktop integration** — added `setDesktopFileName("sysmon")` so the desktop environment can associate the running window with its `.desktop` file (fixes blank taskbar/Alt+Tab icons)
+- **XDG hicolor theme icons** — installed resolution PNGs into `~/.local/share/icons/hicolor/*/apps/sysmon.png`; `.desktop` file now uses `Icon=sysmon` (theme name) instead of a fragile absolute path
+
+### Implementation Details
+- Added `src/icon_loader.py` — adapted from Icon_Manager_Module for PyQt5 with `base_path` defaulting to project `icons/` directory
+- Replaced `set_application_icon()` (40-line path search) with 2-line `IconLoader` call
+- Replaced `set_window_icon()` (20-line path search) with 2-line `IconLoader` call
+- Updated `SysMon.spec` — added `('icons', 'icons')` to `datas` list; changed `icon=` to `app.ico`
+- Updated `sysmon.desktop` — `Icon=sysmon` (theme name, no absolute path)
+
+### Files Added
+- **`src/icon_loader.py`**: Cross-platform icon loader (from Icon_Manager_Module, adapted for PyQt5)
+- **`icons/app.ico`**: Windows multi-resolution icon
+- **`icons/app.icns`**: macOS icon
+- **`icons/app.png`**: Linux default icon (256px)
+- **`icons/app_16x16.png` ... `app_256x256.png`**: Individual resolution PNGs
+
+### Files Modified
+- **`src/sysmon.py`**: Replaced icon path searches with IconLoader; added `setDesktopFileName()` and `set_taskbar_icon()` calls
+- **`SysMon.spec`**: Added icons to bundled data; updated `.ico` path
+- **`sysmon.desktop`**: Changed `Icon=` from absolute path to theme name
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
 ## 2026-02-04 1803 CST - Right-Click to Minimize [ v0.2.21 ]
 
 ### NEW FEATURE: Right-Click Minimize

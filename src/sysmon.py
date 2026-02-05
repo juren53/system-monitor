@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.21
-Release: 2026-02-04 1803 CST
+SysMon - PyQtGraph-based System Monitor v0.3.0
+Release: 2026-02-04 1847 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -100,14 +100,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.21"
+VERSION = "0.3.0"
 RELEASE_DATE = "2026-02-04"
-RELEASE_TIME = "1803 CST"
+RELEASE_TIME = "1847 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
 BUILD_DATE = "2026-02-04"
-BUILD_TIME = "1803 CST"
+BUILD_TIME = "1847 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -1643,29 +1643,9 @@ class SystemMonitor(QMainWindow):
             )
     
     def set_window_icon(self):
-        """Set window icon with proper error handling"""
-        import os
-        
-        # Icon search paths (same as set_application_icon but for instance level)
-        icon_paths = [
-            os.path.join(os.path.dirname(__file__), '..', 'icons', 'ICON_SysMon.png'),
-            os.path.join(os.path.dirname(__file__), '..', 'icons', 'ICON_SysMon.ico'),
-            os.path.join(os.getcwd(), 'icons', 'ICON_SysMon.png'),
-            os.path.join(os.getcwd(), 'icons', 'ICON_SysMon.ico'),
-            'icons/ICON_SysMon.png',
-            'icons/ICON_SysMon.ico'
-        ]
-        
-        for icon_path in icon_paths:
-            try:
-                if os.path.exists(icon_path):
-                    icon = QIcon(icon_path)
-                    if not icon.isNull():
-                        self.setWindowIcon(icon)
-                        return
-            except Exception:
-                continue
-        # If no icon found, continue silently (application icon should be set already)
+        """Set window icon via IconLoader"""
+        from icon_loader import icons
+        self.setWindowIcon(icons.app_icon())
         
     def setup_ui(self):
         """Setup the user interface"""
@@ -4140,44 +4120,9 @@ Please check your internet connection or visit the [SysMon GitHub repository](ht
 
 
 def set_application_icon(app):
-    """Set application icon with proper error handling"""
-    import os
-    
-    # Possible icon paths to search (in order of preference)
-    icon_paths = [
-        # Relative to source file
-        os.path.join(os.path.dirname(__file__), '..', 'icons', 'ICON_SysMon.png'),
-        os.path.join(os.path.dirname(__file__), '..', 'icons', 'ICON_SysMon.ico'),
-        # Current working directory paths
-        os.path.join(os.getcwd(), 'icons', 'ICON_SysMon.png'),
-        os.path.join(os.getcwd(), 'icons', 'ICON_SysMon.ico'),
-        os.path.join(os.getcwd(), 'assets', 'icons', 'ICON_sysmon.png'),
-        os.path.join(os.getcwd(), 'assets', 'icons', 'ICON_sysmon.ico'),
-        # Fallback paths
-        'icons/ICON_SysMon.png',
-        'icons/ICON_SysMon.ico',
-        'assets/icons/ICON_sysmon.png',
-        'assets/icons/ICON_sysmon.ico'
-    ]
-    
-    for icon_path in icon_paths:
-        try:
-            if os.path.exists(icon_path):
-                icon = QIcon(icon_path)
-                if not icon.isNull():
-                    app.setWindowIcon(icon)
-                    print(f"+ Application icon set: {icon_path}")
-                    return True
-                else:
-                    print(f"! Icon file exists but failed to load: {icon_path}")
-            else:
-                continue
-        except Exception as e:
-            print(f"! Icon loading failed for {icon_path}: {e}")
-            continue
-    
-    print("! No valid application icon found, using system default")
-    return False
+    """Set application icon via IconLoader"""
+    from icon_loader import icons
+    app.setWindowIcon(icons.app_icon())
 
 def main():
     app = QApplication(sys.argv)
@@ -4187,16 +4132,21 @@ def main():
         show_instance_already_running(app)
         return 1  # Exit with error code
     
-    # Set application icon
+    # Set application icon and desktop filename (Linux taskbar association)
+    app.setDesktopFileName("sysmon")  # must match sysmon.desktop
     set_application_icon(app)
-    
+
     # Create and show main window
     monitor = SystemMonitor()
     monitor.show()
-    
+
+    # Fix Windows taskbar icon (no-op on other platforms)
+    from icon_loader import icons
+    icons.set_taskbar_icon(monitor)
+
     # Register cleanup for single instance resources
     atexit.register(cleanup_single_instance)
-    
+
     sys.exit(app.exec_())
 
 if __name__ == '__main__':

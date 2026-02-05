@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SysMon is a cross-platform real-time system monitor built with PyQt5 and PyQtGraph. It displays CPU, Disk I/O, and Network activity with high-performance scrolling graphs (75-150x faster than matplotlib). Current version: v0.2.21.
+SysMon is a cross-platform real-time system monitor built with PyQt5 and PyQtGraph. It displays CPU, Disk I/O, and Network activity with high-performance scrolling graphs (75-150x faster than matplotlib). Current version: v0.3.0.
 
 ## Development Commands
 

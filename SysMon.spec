@@ -5,7 +5,7 @@ a = Analysis(
     ['src\\sysmon.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('icons', 'icons')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icons\\ICON_SysMon.ico'],
+    icon=['icons\\app.ico'],
 )
