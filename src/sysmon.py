@@ -21,7 +21,7 @@ from urllib.request import urlopen
 from urllib.error import URLError
 
 # Import GitHub version checker module
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'version-checker-module'))
 try:
     from github_version_checker import GitHubVersionChecker, VersionCheckResult
 except ImportError:
