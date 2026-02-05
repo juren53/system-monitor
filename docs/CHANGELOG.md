@@ -1,5 +1,23 @@
 # Changelog - sysmon.py
 
+## 2026-02-04 1803 CST - Right-Click to Minimize [ v0.2.21 ]
+
+### NEW FEATURE: Right-Click Minimize
+- **Right-click anywhere** on the application window to instantly minimize to taskbar
+- Mirrors existing Down Arrow and M key minimize shortcuts
+- No context menu — immediate minimize on right-click for fast, seamless workflow
+
+### Implementation Details
+- Added `mousePressEvent()` override to `SystemMonitor` class
+- Right mouse button triggers `minimize_window()` directly
+- All other mouse buttons passed through to default handler
+
+### Files Modified
+- **`src/sysmon.py`**: Added `mousePressEvent()` handler
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
 ## 2026-02-03 0900 CST - Project Housekeeping [ v0.2.20a ]
 
 ### Changed

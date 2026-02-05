@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.2.18d
-Release: 2025-12-31 1200 CST
+SysMon - PyQtGraph-based System Monitor v0.2.21
+Release: 2026-02-04 1803 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
@@ -100,14 +100,14 @@ def filter_stderr_gdkpixbuf():
 filter_stderr_gdkpixbuf()
 
 # Version Information
-VERSION = "0.2.20"
-RELEASE_DATE = "2026-01-22"
-RELEASE_TIME = "1400 CST"
+VERSION = "0.2.21"
+RELEASE_DATE = "2026-02-04"
+RELEASE_TIME = "1803 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
-BUILD_DATE = "2026-01-22"
-BUILD_TIME = "1400 CST"
+BUILD_DATE = "2026-02-04"
+BUILD_TIME = "1803 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information
@@ -2593,7 +2593,14 @@ class SystemMonitor(QMainWindow):
             self.decrease_smoothing()
         else:
             super().keyPressEvent(event)
-    
+
+    def mousePressEvent(self, event):
+        """Right-click to minimize window"""
+        if event.button() == Qt.RightButton:
+            self.minimize_window()
+        else:
+            super().mousePressEvent(event)
+
     def position_window_left(self):
         """Move window to left side while maintaining current window size"""
         try:
