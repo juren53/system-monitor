@@ -1,51 +1,26 @@
 #!/usr/bin/env python3
 """
 SysMon - PyQtGraph-based System Monitor v0.3.1
-Release: 2026-02-04 1847 CST
+Release: 2026-02-08 0859 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
 Professional system monitoring with XDG compliance and advanced features
 """
 
 import sys
-import json
 import os
 import atexit
-import platform
-import datetime
-import threading
 import time
-import webbrowser
 from collections import deque
-from urllib.request import urlopen
-from urllib.error import URLError
-
-# Import GitHub version checker module
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'version-checker-module'))
-try:
-    from github_version_checker import GitHubVersionChecker, VersionCheckResult
-except ImportError:
-    print("Warning: GitHub version checker module not available")
-    GitHubVersionChecker = None
-    VersionCheckResult = None
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                              QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,
-                              QTextBrowser, QMenuBar, QMenu, QAction, QMessageBox,
-                              QFileDialog, QInputDialog, QColorDialog, QCheckBox,
-                              QSpinBox, QGroupBox, QFormLayout, QDialogButtonBox,
-                              QComboBox, QTableWidget, QTableWidgetItem, QLineEdit, QTabWidget)
-from PyQt5.QtCore import QTimer, Qt, QSize, QSharedMemory, QSystemSemaphore, QThread, pyqtSignal, QObject
-from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtGui import QKeySequence, QIcon, QPalette, QFont, QColor
-from PyQt5.QtGui import QGuiApplication
+                              QHBoxLayout, QLabel)
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QPalette
 import pyqtgraph as pg
 import psutil
-import markdown
-from markdown.extensions import fenced_code, tables, nl2br, sane_lists
-from pygments.formatters import HtmlFormatter
 
-# --- Modular imports (Phase 1 refactoring) ---
+# --- Modular imports ---
 from sysmon.constants import (VERSION, RELEASE_DATE, RELEASE_TIME, FULL_VERSION,
                                BUILD_DATE, BUILD_TIME, BUILD_INFO,
                                APPLICATION_START_TIME, PYTHON_VERSION, PLATFORM_INFO)
@@ -55,45 +30,47 @@ from sysmon.config import (get_xdg_config_dir, ensure_config_directory,
 from sysmon.platform import (filter_stderr_gdkpixbuf, check_single_instance,
                               cleanup_single_instance, show_instance_already_running,
                               set_application_icon)
-from sysmon.dialogs import (ProcessWorker, ProcessInfoDialog, RealTimeProcessDialog,
-                             DiskIOWorker, RealTimeDiskDialog,
-                             NetworkWorker, RealTimeNetworkDialog,
-                             ConfigFileViewerDialog)
 from sysmon.theme import ThemeMixin
 from sysmon.menu import MenuMixin
 from sysmon.updates import UpdatesMixin
 from sysmon.markdown_render import MarkdownMixin
+from sysmon.data import DataMixin
+from sysmon.window import WindowMixin
+from sysmon.settings import SettingsMixin
+from sysmon.about import AboutMixin
 
 # Apply stderr filtering at startup
 filter_stderr_gdkpixbuf()
 
 
-class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin, QMainWindow):
+class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
+                    DataMixin, WindowMixin, SettingsMixin, AboutMixin,
+                    QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SysMon - PyQtGraph Edition")
-        
+
         # Set window icon (fallback for window-level icon)
         self.set_window_icon()
-        
+
         # XDG-compliant configuration directory
         self.config_dir = get_xdg_config_dir()
         ensure_config_directory(self.config_dir)
-        
+
         # Migrate old config if exists
         old_config_file = os.path.join(os.path.expanduser('~'), '.sysmon_config.json')
         migration_success = migrate_old_config(old_config_file, self.config_dir)
         if migration_success:
             print("Migrated configuration to XDG-compliant location")
-        
+
         # Configuration file paths
         self.config_file = get_config_file_path(self.config_dir)
         self.preferences_file = get_preferences_file_path(self.config_dir)
-        
+
         # Set default size if no saved geometry exists
         if not hasattr(self, '_initial_geometry_loaded'):
             self.resize(1000, 700)
-        
+
         # Configuration defaults (will be overridden by loaded preferences)
         self.time_window = 20  # seconds
         self.update_interval = 200  # ms
@@ -113,9 +90,9 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin, QMainWin
         self.last_update_check = 0  # Timestamp of last update check
         self.update_check_interval_days = 7  # Days between automatic checks
         self.skipped_update_versions = []  # Versions user chose to skip
-        
+
         self.max_points = int((self.time_window * 1000) / self.update_interval)
-        
+
         # Data storage
         self.cpu_data = deque(maxlen=self.max_points)
         self.disk_read_data = deque(maxlen=self.max_points)
@@ -123,7 +100,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin, QMainWin
         self.net_sent_data = deque(maxlen=self.max_points)
         self.net_recv_data = deque(maxlen=self.max_points)
         self.time_data = deque(maxlen=self.max_points)
-        
+
         # Memory data storage
         self.ram_total = 0
         self.ram_available = 0
@@ -131,62 +108,61 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin, QMainWin
         self.swap_total = 0
         self.swap_available = 0
         self.swap_percent = 0
-        
+
         # Previous values for rate calculation
         self.prev_disk_io = psutil.disk_io_counters()
         self.prev_net_io = psutil.net_io_counters()
         self.prev_time = time.time()
-        
+
         # Async process analysis attributes
         self.process_worker = None
         self.process_thread = None
-        
+
         self.setup_ui()
         self.setup_menu_bar()
         self.setup_timer()
-        
+
         # Load preferences after timer is created
         self.load_window_geometry()
-        
+
         # Add periodic save timer as backup
         self.save_timer = QTimer()
         self.save_timer.timeout.connect(self.save_window_geometry)
         self.save_timer.start(30000)  # Save every 30 seconds
-        
+
         # Check for updates on startup if enabled
         self.check_updates_on_startup()
-        
-    
+
     def set_window_icon(self):
         """Set window icon via IconLoader"""
         from icon_loader import icons
         self.setWindowIcon(icons.app_icon())
-        
+
     def setup_ui(self):
         """Setup the user interface"""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
-        
+
         # Memory info panel
         memory_layout = QHBoxLayout()
-        
+
         self.ram_label = QLabel("Memory Usage: --% (--GB / --GB)")
         self.ram_label.setStyleSheet("QLabel { font-weight: bold; color: #2196F3; }")
         memory_layout.addWidget(self.ram_label)
-        
+
         memory_layout.addStretch()
-        
+
         self.swap_label = QLabel("Swap Usage: --% (--GB / --GB)")
         self.swap_label.setStyleSheet("QLabel { font-weight: bold; color: #FF9800; }")
         memory_layout.addWidget(self.swap_label)
-        
+
         main_layout.addLayout(memory_layout)
 
         # Setup plots with system theme
         self.apply_application_theme()
         pg.setConfigOptions(antialias=True)
-        
+
         # CPU Plot
         self.cpu_plot = pg.PlotWidget(title="CPU Usage (%)")
         self.cpu_plot.setLabel('left', 'Usage', units='%')
@@ -198,7 +174,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin, QMainWin
         self.cpu_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_realtime_processes('cpu') if evt.double() else None)
         main_layout.addWidget(self.cpu_plot)
-        
+
         # Disk I/O Plot
         self.disk_plot = pg.PlotWidget(title="Disk I/O (MB/s)")
         self.disk_plot.setLabel('left', 'Rate', units='MB/s')
@@ -211,7 +187,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin, QMainWin
         self.disk_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_realtime_disk() if evt.double() else None)
         main_layout.addWidget(self.disk_plot)
-        
+
         # Network Plot
         self.net_plot = pg.PlotWidget(title="Network Traffic (MB/s)")
         self.net_plot.setLabel('left', 'Rate', units='MB/s')
@@ -237,7 +213,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin, QMainWin
         # Version label in lower right corner
         version_layout = QHBoxLayout()
         version_layout.addStretch()
-        
+
         # Create version label with release info
         version_text = f"SysMon {VERSION}\nReleased: {RELEASE_DATE}"
         self.version_label = QLabel(version_text)
@@ -261,1612 +237,14 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin, QMainWin
         self.load_line_thickness_preference()
 
 
-
-
-
-        
-        
-    def setup_timer(self):
-        """Setup update timer"""
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_data)
-        self.timer.start(self.update_interval)
-        
-    def update_data(self):
-        """Update all monitoring data"""
-        current_time = time.time()
-        elapsed = current_time - self.prev_time
-        
-        # CPU usage
-        cpu_percent = psutil.cpu_percent()
-        self.cpu_data.append(cpu_percent)
-        
-        # Disk I/O
-        disk_io = psutil.disk_io_counters()
-        if disk_io and self.prev_disk_io:
-            read_rate = (disk_io.read_bytes - self.prev_disk_io.read_bytes) / elapsed / (1024**2)
-            write_rate = (disk_io.write_bytes - self.prev_disk_io.write_bytes) / elapsed / (1024**2)
-            self.disk_read_data.append(max(0, read_rate))
-            self.disk_write_data.append(max(0, write_rate))
-            self.prev_disk_io = disk_io
-        
-        # Network I/O
-        net_io = psutil.net_io_counters()
-        if net_io and self.prev_net_io:
-            sent_rate = (net_io.bytes_sent - self.prev_net_io.bytes_sent) / elapsed / (1024**2)
-            recv_rate = (net_io.bytes_recv - self.prev_net_io.bytes_recv) / elapsed / (1024**2)
-            self.net_sent_data.append(max(0, sent_rate))
-            self.net_recv_data.append(max(0, recv_rate))
-            self.prev_net_io = net_io
-        
-        # Memory information
-        memory = psutil.virtual_memory()
-        self.ram_total = memory.total / (1024**2)  # Convert to MB
-        self.ram_available = memory.available / (1024**2)  # Convert to MB
-        self.ram_percent = memory.percent
-        
-        # Swap information
-        swap = psutil.swap_memory()
-        self.swap_total = swap.total / (1024**2)  # Convert to MB
-        self.swap_available = swap.free / (1024**2)  # Convert to MB
-        self.swap_percent = swap.percent
-        
-        # Time axis
-        if len(self.time_data) == 0:
-            self.time_data.append(0)
-        else:
-            self.time_data.append(self.time_data[-1] + elapsed)
-        
-        self.prev_time = current_time
-        
-        # Update memory display labels
-        ram_used_gb = (self.ram_total - self.ram_available) / 1024
-        ram_total_gb = self.ram_total / 1024
-        self.ram_label.setText(f"Memory Usage: {self.ram_percent:.1f}% ({ram_used_gb:.1f}GB / {ram_total_gb:.1f}GB)")
-
-        swap_used_gb = (self.swap_total - self.swap_available) / 1024
-        swap_total_gb = self.swap_total / 1024
-        self.swap_label.setText(f"Swap Usage: {self.swap_percent:.1f}% ({swap_used_gb:.1f}GB / {swap_total_gb:.1f}GB)")
-        
-        # Update plots
-        self.update_plots()
-        
-    def update_plots(self):
-        """Update all plot curves"""
-        if len(self.time_data) == 0:
-            return
-
-        # Normalize time axis to show last N seconds
-        time_array = [t - self.time_data[-1] for t in self.time_data]
-
-        # Apply smoothing to all data series
-        cpu_smoothed = self.apply_smoothing(self.cpu_data)
-        disk_read_smoothed = self.apply_smoothing(self.disk_read_data)
-        disk_write_smoothed = self.apply_smoothing(self.disk_write_data)
-        net_sent_smoothed = self.apply_smoothing(self.net_sent_data)
-        net_recv_smoothed = self.apply_smoothing(self.net_recv_data)
-
-        # Update CPU
-        self.cpu_curve.setData(time_array, cpu_smoothed)
-
-        # Update Disk I/O
-        self.disk_read_curve.setData(time_array, disk_read_smoothed)
-        self.disk_write_curve.setData(time_array, disk_write_smoothed)
-
-        # Update Network
-        self.net_sent_curve.setData(time_array, net_sent_smoothed)
-        self.net_recv_curve.setData(time_array, net_recv_smoothed)
-
-    def apply_smoothing(self, data):
-        """Apply moving average smoothing to data
-
-        Args:
-            data: List or deque of numeric values
-
-        Returns:
-            List of smoothed values (same length as input)
-        """
-        if self.smoothing_window <= 1 or len(data) < 2:
-            return list(data)
-
-        smoothed = []
-        window = min(self.smoothing_window, len(data))
-
-        for i in range(len(data)):
-            # Calculate average of current point and previous points
-            start_idx = max(0, i - window + 1)
-            window_data = list(data)[start_idx:i+1]
-            avg = sum(window_data) / len(window_data)
-            smoothed.append(avg)
-
-        return smoothed
-
-    def increase_time_window(self):
-        """Increase time window by 5 seconds"""
-        self.time_window = min(120, self.time_window + 5)
-        self.update_time_window()
-        
-    def decrease_time_window(self):
-        """Decrease time window by 5 seconds"""
-        self.time_window = max(5, self.time_window - 5)
-        self.update_time_window()
-        
-    def update_time_window(self):
-        """Update time window and adjust data buffers"""
-        self.max_points = int((self.time_window * 1000) / self.update_interval)
-        
-        # Update all deques with new maxlen
-        for data_list in [self.cpu_data, self.disk_read_data, self.disk_write_data,
-                         self.net_sent_data, self.net_recv_data, self.time_data]:
-            if len(data_list) > self.max_points:
-                # Trim from the left
-                for _ in range(len(data_list) - self.max_points):
-                    data_list.popleft()
-        
-        # Update x-axis range
-        self.cpu_plot.setXRange(-self.time_window, 0)
-        self.disk_plot.setXRange(-self.time_window, 0)
-        self.net_plot.setXRange(-self.time_window, 0)
-
-    def increase_smoothing(self):
-        """Increase smoothing window by 1 point"""
-        if self.smoothing_window < self.max_smoothing:
-            self.smoothing_window += 1
-            self.show_smoothing_status()
-            self.save_preferences()
-        else:
-            # Already at maximum - show feedback
-            self.show_smoothing_limit_status("maximum")
-
-    def decrease_smoothing(self):
-        """Decrease smoothing window by 1 point"""
-        if self.smoothing_window > self.min_smoothing:
-            self.smoothing_window -= 1
-            self.show_smoothing_status()
-            self.save_preferences()
-        else:
-            # Already at minimum - show feedback
-            self.show_smoothing_limit_status("minimum")
-
-    def show_smoothing_status(self):
-        """Display current smoothing level as status message"""
-        if self.smoothing_window == 1:
-            status_msg = "Smoothing: OFF (Raw data)"
-        else:
-            # Calculate approximate time window for smoothing
-            time_span = (self.smoothing_window * self.update_interval) / 1000
-            status_msg = f"Smoothing: {self.smoothing_window}-point ({time_span:.2f}s window)"
-
-        # Display in window title briefly
-        original_title = self.windowTitle()
-        self.setWindowTitle(f"SysMon - {status_msg}")
-
-        # Reset title after 2 seconds
-        QTimer.singleShot(2000, lambda: self.setWindowTitle(original_title))
-
-    def show_smoothing_limit_status(self, limit_type):
-        """Display feedback when user tries to exceed smoothing limits"""
-        if limit_type == "minimum":
-            status_msg = f"Smoothing: Already at MINIMUM ({self.min_smoothing}-point)"
-        else:  # maximum
-            time_span = (self.max_smoothing * self.update_interval) / 1000
-            status_msg = f"Smoothing: Already at MAXIMUM ({self.max_smoothing}-point / {time_span:.2f}s)"
-
-        # Display in window title briefly
-        original_title = self.windowTitle()
-        self.setWindowTitle(f"SysMon - {status_msg}")
-
-        # Reset title after 2 seconds
-        QTimer.singleShot(2000, lambda: self.setWindowTitle(original_title))
-
-    def show_top_processes(self, metric_type):
-        """Show top processes for the specified metric with async processing"""
-        # Create progress dialog
-        from PyQt5.QtWidgets import QProgressDialog, QApplication
-        progress = QProgressDialog("Analyzing processes...", "Cancel", 0, 100, self)
-        progress.setWindowTitle("Process Analysis")
-        progress.setWindowModality(Qt.WindowModal)
-        progress.setMinimumDuration(0)
-        progress.show()
-        
-        # Create worker and thread
-        self.process_worker = ProcessWorker(metric_type)
-        self.process_thread = QThread()
-        
-        # Move worker to thread
-        self.process_worker.moveToThread(self.process_thread)
-        
-        # Connect signals
-        self.process_worker.finished.connect(self.process_thread.quit)
-        self.process_worker.finished.connect(self.process_worker.deleteLater)
-        self.process_worker.error.connect(self.process_thread.quit)
-        self.process_worker.error.connect(self.process_worker.deleteLater)
-        self.process_worker.progress.connect(progress.setValue)
-        self.process_thread.started.connect(self.process_worker.run)
-        
-        # Handle completion
-        self.process_worker.finished.connect(lambda top_procs: self.on_process_analysis_complete(top_procs, metric_type, progress))
-        self.process_worker.error.connect(lambda error: self.on_process_analysis_error(error, progress))
-        
-        # Handle cancellation
-        progress.canceled.connect(self.cancel_process_analysis)
-        
-        # Start analysis
-        self.process_thread.start()
-        
-        # Keep the event loop responsive
-        QApplication.processEvents()
-    
-    def cancel_process_analysis(self):
-        """Cancel the ongoing process analysis"""
-        if hasattr(self, 'process_worker') and self.process_worker:
-            self.process_worker.cancel()
-        if hasattr(self, 'process_thread') and self.process_thread:
-            self.process_thread.quit()
-            self.process_thread.wait()
-    
-    def on_process_analysis_complete(self, top_procs, metric_type, progress):
-        """Handle completion of process analysis"""
-        progress.close()
-        
-        if not top_procs:
-            QMessageBox.information(self, "No Data", "No process data available.")
-            return
-        
-        # Format output
-        if metric_type == 'cpu':
-            title = "Top 10 CPU Consumers"
-            header = f"{'PID':<8} {'Name':<30} {'CPU %':>12}\n" + "="*52 + "\n"
-            lines = [f"{p['pid']:<8} {p['name'][:30]:<30} {p['cpu_percent']:>11.1f}%" 
-                    for p in top_procs]
-        else:
-            if metric_type == 'disk':
-                title = "Top 10 Disk I/O Processes"
-                sort_key = 'disk_mb'
-                header = f"{'PID':<8} {'Name':<30} {'MB':>12}\n" + "="*52 + "\n"
-                lines = [f"{p['pid']:<8} {p['name'][:30]:<30} {p[sort_key]:>11.2f}" 
-                        for p in top_procs]
-            else:  # network
-                title = "Top 10 Network-Active Processes"
-                sort_key = 'net_connections'
-                header = f"{'PID':<8} {'Name':<30} {'Connections':>12}\n" + "="*52 + "\n"
-                lines = [f"{p['pid']:<8} {p['name'][:30]:<30} {p[sort_key]:>12}" 
-                        for p in top_procs]
-        
-        output = header + "\n".join(lines)
-        
-        dialog = ProcessInfoDialog(title, output, self)
-        dialog.exec_()
-        
-        # Clean up thread
-        if hasattr(self, 'process_thread') and self.process_thread:
-            self.process_thread.deleteLater()
-    
-    def on_process_analysis_error(self, error, progress):
-        """Handle process analysis error"""
-        progress.close()
-        QMessageBox.critical(self, "Error", error)
-        
-        # Clean up thread
-        if hasattr(self, 'process_thread') and self.process_thread:
-            self.process_thread.deleteLater()
-    
-    # Keyboard Navigation Methods
-    def keyPressEvent(self, event):
-        """Handle keyboard events for window positioning"""
-        if event.key() == Qt.Key_Left:
-            self.position_window_left()
-        elif event.key() == Qt.Key_Right:
-            self.position_window_right()
-        elif event.key() == Qt.Key_M:
-            self.minimize_window()
-        elif event.key() == Qt.Key_Down:
-            self.minimize_window()
-        elif event.key() == Qt.Key_T:
-            self.toggle_transparency()
-        elif event.key() == Qt.Key_Q:
-            self.close()
-        elif event.key() == Qt.Key_Plus or event.key() == Qt.Key_Equal:
-            self.increase_smoothing()
-        elif event.key() == Qt.Key_Minus:
-            self.decrease_smoothing()
-        else:
-            super().keyPressEvent(event)
-
-    def mousePressEvent(self, event):
-        """Right-click to minimize window"""
-        if event.button() == Qt.RightButton:
-            self.minimize_window()
-        else:
-            super().mousePressEvent(event)
-
-    def position_window_left(self):
-        """Move window to left side while maintaining current window size"""
-        try:
-            # Get current window dimensions (preserve user's preferred size)
-            current_width = self.width()
-            current_height = self.height()
-            
-            # Get the screen where the window is currently located
-            screen = self.screen()
-            if not screen:
-                # Fallback to primary screen if the window is not on any screen
-                screen = QGuiApplication.primaryScreen()
-            
-            # Get available geometry (excluding taskbars, docks, etc.)
-            available = screen.availableGeometry()
-            
-            # Calculate left position (preserve current window size)
-            x_pos = available.x()
-            # Ensure y position keeps window fully visible on screen
-            y_pos = max(available.y(), 
-                          min(self.y(), 
-                              available.y() + available.height() - current_height))
-            
-            # Move window without resizing (preserve user's preferred dimensions)
-            self.move(x_pos, y_pos)
-            
-        except Exception as e:
-            print(f"Error moving window to left: {e}")
-    
-    def position_window_right(self):
-        """Move window to right side while maintaining current window size"""
-        try:
-            # Get current window dimensions (preserve user's preferred size)
-            current_width = self.width()
-            current_height = self.height()
-            
-            # Get the screen where the window is currently located
-            screen = self.screen()
-            if not screen:
-                # Fallback to primary screen if the window is not on any screen
-                screen = QGuiApplication.primaryScreen()
-            
-            # Get available geometry (excluding taskbars, docks, etc.)
-            available = screen.availableGeometry()
-            
-            # Calculate right position (preserve current window size)
-            x_pos = available.x() + available.width() - current_width
-            # Ensure y position keeps window fully visible on screen
-            y_pos = max(available.y(), 
-                          min(self.y(), 
-                              available.y() + available.height() - current_height))
-            
-            # Move window without resizing (preserve user's preferred dimensions)
-            self.move(x_pos, y_pos)
-            
-        except Exception as e:
-            print(f"Error moving window to right: {e}")
-    
-    def minimize_window(self):
-        """Minimize the application window to taskbar"""
-        try:
-            self.showMinimized()
-        except Exception as e:
-            print(f"Error minimizing window: {e}")
-
-    def toggle_transparency(self):
-        """Toggle window transparency between opaque and 50% transparent"""
-        try:
-            if self._transparency_toggled:
-                # Return to opaque (100%)
-                self.set_window_transparency(1.0)
-                self._transparency_toggled = False
-            else:
-                # Set to 50% transparent
-                self.set_window_transparency(0.5)
-                self._transparency_toggled = True
-        except Exception as e:
-            print(f"Error toggling transparency: {e}")
-
-# Window Geometry Methods
-    def closeEvent(self, event):
-        """Handle window close event to save geometry"""
-        try:
-            self.save_window_geometry()
-            print("Window geometry saved successfully")
-        except Exception as e:
-            print(f"Failed to save window geometry: {e}")
-        event.accept()
-    
-    def load_window_geometry(self):
-        """Load saved window geometry and preferences"""
-        try:
-            # Load main config (window geometry, etc.)
-            if os.path.exists(self.config_file):
-                with open(self.config_file, 'r') as f:
-                    config = json.load(f)
-                    geometry = config.get('window_geometry', {})
-                    if geometry:
-                        # Convert back to QByteArray format
-                        geometry_data = geometry.get('geometry', '')
-                        state_data = geometry.get('state', '')
-                        
-                        if geometry_data:
-                            from PyQt5.QtCore import QByteArray
-                            geo_bytes = QByteArray(geometry_data.encode('latin1'))
-                            state_bytes = QByteArray(state_data.encode('latin1'))
-                            
-                            self.restoreGeometry(geo_bytes)
-                            self.restoreState(state_bytes)
-                        else:
-                            # Backwards compatibility: handle old x,y,window_size format
-                            x = config.get('x')
-                            y = config.get('y') 
-                            window_size = config.get('window_size')
-                            if x is not None and y is not None and window_size:
-                                self.move(x, y)
-                                self.resize(window_size[0], window_size[1])
-            
-            # Load user preferences
-            if os.path.exists(self.preferences_file):
-                with open(self.preferences_file, 'r') as f:
-                    prefs = json.load(f)
-                    # Set flag before loading any preferences to block signal handling
-                    self._loading_preferences = True
-                    self.update_interval = prefs.get('update_interval', 200)
-                    self.time_window = prefs.get('time_window', 30)
-                    self.transparency = prefs.get('transparency', 1.0)
-                    self.always_on_top = prefs.get('always_on_top', False)
-                    self.invert_axis = prefs.get('invert_axis', False)
-                    self.smoothing_window = prefs.get('smoothing_window', 1)
-                    self.theme_mode = prefs.get('theme_mode', 'auto')
-                    self.auto_check_updates = prefs.get('auto_check_updates', False)
-                    self.last_update_check = prefs.get('last_update_check', 0)
-                    self.update_check_interval_days = prefs.get('update_check_interval_days', 7)
-                    self.skipped_update_versions = prefs.get('skipped_update_versions', [])
-
-                    # Apply loaded preferences
-                    if hasattr(self, 'timer'):
-                        self.timer.setInterval(self.update_interval)
-                    self.max_points = int((self.time_window * 1000) / self.update_interval)
-                    self.set_window_transparency(self.transparency)
-                    self.set_always_on_top(self.always_on_top)
-                    self.always_on_top_action.setChecked(self.always_on_top)
-
-                    # Apply saved axis inversion state to all graphs
-                    if self.invert_axis:
-                        self.cpu_plot.getPlotItem().getViewBox().invertX(True)
-                        self.disk_plot.getPlotItem().getViewBox().invertX(True)
-                        self.net_plot.getPlotItem().getViewBox().invertX(True)
-
-                    # Clear the flag after all preferences are applied
-                    self._loading_preferences = False
-
-        except Exception as e:
-            self._loading_preferences = False  # Ensure flag is reset even on error
-            print(f"Failed to load configuration: {e}")
-    
-    def save_window_geometry(self):
-        """Save window geometry and preferences"""
-        try:
-            # Use Qt's proper geometry serialization
-            geometry_data = {
-                'geometry': self.saveGeometry().data().decode('latin1'),
-                'state': self.saveState().data().decode('latin1')
-            }
-            
-            config = {
-                'window_geometry': geometry_data
-            }
-            
-            # Load existing config and merge if it exists
-            existing_config = {}
-            if os.path.exists(self.config_file):
-                try:
-                    with open(self.config_file, 'r') as f:
-                        existing_config = json.load(f)
-                except:
-                    existing_config = {}
-            
-            # Merge new settings with existing ones
-            existing_config.update(config)
-            
-            # Save main config (window geometry, etc.)
-            with open(self.config_file, 'w') as f:
-                json.dump(existing_config, f, indent=2)
-                # print(f"Saved configuration to: {self.config_file}")  # Debug output
-        except Exception as e:
-            print(f"Failed to save configuration: {e}")  # Debug output
-
-    def on_axis_changed(self):
-        """Handle axis inversion changes from any graph's context menu"""
-        # Skip signal handling during preference loading to prevent overwriting saved settings
-        if self._loading_preferences:
-            return
-
-        # Get the state from whichever graph triggered the signal
-        sender = self.sender()  # Get the ViewBox that triggered the signal
-        state = sender.getState()
-        new_invert_state = state.get('xInverted', False)
-
-        # Only update if state actually changed to avoid recursion
-        if new_invert_state != self.invert_axis:
-            self.invert_axis = new_invert_state
-            # Apply the same state to all three graphs
-            self.cpu_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
-            self.disk_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
-            self.net_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
-            # Save the preference
-            self.save_preferences()
-
-    def save_preferences(self):
-        """Save user preferences to separate preferences file"""
-        try:
-            preferences = {
-                'update_interval': self.update_interval,
-                'time_window': self.time_window,
-                'transparency': self.transparency,
-                'always_on_top': self.always_on_top,
-                'invert_axis': self.invert_axis,
-                'smoothing_window': self.smoothing_window,
-                'theme_mode': self.theme_mode,
-                'auto_check_updates': self.auto_check_updates,
-                'last_update_check': self.last_update_check,
-                'update_check_interval_days': self.update_check_interval_days,
-                'skipped_update_versions': self.skipped_update_versions
-            }
-            
-            with open(self.preferences_file, 'w') as f:
-                json.dump(preferences, f, indent=2)
-                
-            print(f"Saved preferences to: {self.preferences_file}")
-        except Exception as e:
-            print(f"Failed to save preferences: {e}")
-    
-    # File Menu Methods
-    def save_data(self):
-        """Save monitoring data to CSV file"""
-        try:
-            file_path, _ = QFileDialog.getSaveFileName(
-                self, "Save Data", "", "CSV Files (*.csv);;All Files (*)")
-            
-            if file_path:
-                import csv
-                with open(file_path, 'w', newline='') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(['Time', 'CPU %', 'Disk Read (MB/s)', 'Disk Write (MB/s)', 
-                                   'Network Sent (MB/s)', 'Network Received (MB/s)'])
-                    
-                    for i, time_val in enumerate(self.time_data):
-                        writer.writerow([
-                            time_val,
-                            self.cpu_data[i] if i < len(self.cpu_data) else '',
-                            self.disk_read_data[i] if i < len(self.disk_read_data) else '',
-                            self.disk_write_data[i] if i < len(self.disk_write_data) else '',
-                            self.net_sent_data[i] if i < len(self.net_sent_data) else '',
-                            self.net_recv_data[i] if i < len(self.net_recv_data) else ''
-                        ])
-                
-                QMessageBox.information(self, "Success", f"Data saved to {file_path}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save data: {str(e)}")
-    
-    def export_graph(self):
-        """Export current graph view as image"""
-        try:
-            file_path, _ = QFileDialog.getSaveFileName(
-                self, "Export Graph", "", "PNG Files (*.png);;All Files (*)")
-            
-            if file_path:
-                # Get screen capture of the main window
-                import os
-                from PyQt5.QtWidgets import QApplication
-                screen = QApplication.primaryScreen()
-                screenshot = screen.grabWindow(self.winId())
-                screenshot.save(file_path, 'png')
-                
-                QMessageBox.information(self, "Success", f"Graph exported to {file_path}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to export graph: {str(e)}")
-    
-    # Edit Menu Methods
-    def copy_graph(self):
-        """Copy current graph to clipboard"""
-        try:
-            from PyQt5.QtWidgets import QApplication
-            screen = QApplication.primaryScreen()
-            screenshot = screen.grabWindow(self.winId())
-            QApplication.clipboard().setImage(screenshot.toImage())
-            QMessageBox.information(self, "Success", "Graph copied to clipboard")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to copy graph: {str(e)}")
-    
-    def clear_data(self):
-        """Clear all monitoring data"""
-        reply = QMessageBox.question(self, 'Clear Data', 
-                                   'Are you sure you want to clear all monitoring data?',
-                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        
-        if reply == QMessageBox.Yes:
-            self.cpu_data.clear()
-            self.disk_read_data.clear()
-            self.disk_write_data.clear()
-            self.net_sent_data.clear()
-            self.net_recv_data.clear()
-            self.time_data.clear()
-            self.update_plots()
-    
-    def reset_settings(self):
-        """Reset all settings to defaults"""
-        reply = QMessageBox.question(self, 'Reset Settings', 
-                                   'Are you sure you want to reset all settings to defaults?',
-                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        
-        if reply == QMessageBox.Yes:
-            self.time_window = 20
-            self.update_interval = 200
-            self.transparency = 1.0
-            self.always_on_top = False
-            self.smoothing_window = 1
-            self.max_points = int((self.time_window * 1000) / self.update_interval)
-            self.timer.setInterval(self.update_interval)
-            self.update_time_window()
-            self.set_window_transparency(self.transparency)
-            self.set_always_on_top(self.always_on_top)
-            self.always_on_top_action.setChecked(self.always_on_top)
-            
-            # Remove config file to reset window geometry
-            try:
-                if os.path.exists(self.config_file):
-                    os.remove(self.config_file)
-                if os.path.exists(self.preferences_file):
-                    os.remove(self.preferences_file)
-            except:
-                pass
-            
-            QMessageBox.information(self, "Success", "Settings reset to defaults\n\nConfig file removed - window will reset to default size and position on next restart.")
-    
-    # View Menu Methods
-    def toggle_cpu_plot(self):
-        """Toggle CPU plot visibility"""
-        self.cpu_plot.setVisible(self.show_cpu_action.isChecked())
-    
-    def toggle_disk_plot(self):
-        """Toggle Disk I/O plot visibility"""
-        self.disk_plot.setVisible(self.show_disk_action.isChecked())
-    
-    def toggle_network_plot(self):
-        """Toggle Network plot visibility"""
-        self.net_plot.setVisible(self.show_network_action.isChecked())
-    
-    def toggle_fullscreen(self):
-        """Toggle fullscreen mode"""
-        if self.isFullScreen():
-            self.showNormal()
-        else:
-            self.showFullScreen()
-    
-    # Config Menu Methods
-    def change_update_interval(self):
-        """Change data update interval"""
-        interval, ok = QInputDialog.getInt(
-            self, 'Update Interval', 'Update interval (milliseconds):', 
-            self.update_interval, 50, 5000, 50)
-        
-        if ok:
-            self.update_interval = interval
-            self.timer.setInterval(interval)
-            self.max_points = int((self.time_window * 1000) / self.update_interval)
-            self.update_time_window()
-            self.save_preferences()
-
-    def view_config_files(self):
-        """Display configuration files in read-only dialog"""
-        dialog = ConfigFileViewerDialog(self.config_file, self.preferences_file, self)
-        dialog.exec_()
-
-    def change_time_window_settings(self):
-        """Configure time window settings"""
-        time_window, ok = QInputDialog.getInt(
-            self, 'Time Window', 'Time window (seconds):', 
-            self.time_window, 5, 300, 5)
-        
-        if ok:
-            self.time_window = time_window
-            self.update_time_window()
-            self.save_preferences()
-
-    def change_smoothing_level(self):
-        """Configure smoothing level via dialog"""
-        level, ok = QInputDialog.getInt(
-            self, 'Smoothing Level',
-            'Smoothing window (data points):\n1 = No smoothing (raw data)\nHigher = More smoothing',
-            self.smoothing_window, 1, 20, 1)
-
-        if ok:
-            self.smoothing_window = level
-            self.show_smoothing_status()
-            self.save_preferences()
-
-    def change_theme(self):
-        """Configure theme mode (Auto/Light/Dark)"""
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QRadioButton, QDialogButtonBox, QLabel, QGroupBox
-
-        # Create dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Theme Selection")
-        dialog.setModal(True)
-        dialog.resize(400, 250)
-
-        layout = QVBoxLayout()
-
-        # Description
-        desc_label = QLabel(
-            "Select the theme mode for SysMon:\n\n"
-            "• Auto: Automatically detect system theme\n"
-            "• Light: Force light theme\n"
-            "• Dark: Force dark theme"
-        )
-        desc_label.setWordWrap(True)
-        layout.addWidget(desc_label)
-
-        # Radio buttons group
-        group_box = QGroupBox("Theme Mode")
-        group_layout = QVBoxLayout()
-
-        self.theme_auto_radio = QRadioButton("Auto (System Detection)")
-        self.theme_light_radio = QRadioButton("Light")
-        self.theme_dark_radio = QRadioButton("Dark")
-
-        # Set current selection
-        if self.theme_mode == 'auto':
-            self.theme_auto_radio.setChecked(True)
-        elif self.theme_mode == 'light':
-            self.theme_light_radio.setChecked(True)
-        elif self.theme_mode == 'dark':
-            self.theme_dark_radio.setChecked(True)
-
-        group_layout.addWidget(self.theme_auto_radio)
-        group_layout.addWidget(self.theme_light_radio)
-        group_layout.addWidget(self.theme_dark_radio)
-        group_box.setLayout(group_layout)
-        layout.addWidget(group_box)
-
-        # Dialog buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        button_box.accepted.connect(dialog.accept)
-        button_box.rejected.connect(dialog.reject)
-        layout.addWidget(button_box)
-
-        dialog.setLayout(layout)
-
-        # Show dialog and apply if accepted
-        if dialog.exec_() == QDialog.Accepted:
-            # Determine selected theme
-            old_theme = self.theme_mode
-            if self.theme_auto_radio.isChecked():
-                self.theme_mode = 'auto'
-            elif self.theme_light_radio.isChecked():
-                self.theme_mode = 'light'
-            elif self.theme_dark_radio.isChecked():
-                self.theme_mode = 'dark'
-
-            # Apply theme if changed
-            if old_theme != self.theme_mode:
-                self.apply_application_theme()
-                self.save_preferences()
-                QMessageBox.information(
-                    self,
-                    "Theme Changed",
-                    f"Theme set to: {self.theme_mode.capitalize()}\n\nThe new theme has been applied."
-                )
-
-    def customize_graph_colors(self):
-        """Enhanced graph colors customization with background/grid support"""
-        from PyQt5.QtWidgets import QComboBox, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
-        from PyQt5.QtGui import QColor
-        
-        # Current default colors (preserve existing professional scheme)
-        default_colors = {
-            'cpu': '#00ff00',      # Bright green
-            'disk_read': '#ff6b6b',  # Red
-            'disk_write': '#4ecdc4', # Cyan
-            'net_sent': '#ff9ff3',   # Pink
-            'net_recv': '#00bcd4',   # Blue
-            'background': None,          # Let theme decide
-            'grid': None                # Let theme decide
-        }
-        
-        # Get current colors from plots
-        current_colors = {
-            'cpu': self.cpu_curve.opts['pen'].color().name() if self.cpu_curve else default_colors['cpu'],
-            'disk_read': self.disk_read_curve.opts['pen'].color().name() if self.disk_read_curve else default_colors['disk_read'],
-            'disk_write': self.disk_write_curve.opts['pen'].color().name() if self.disk_write_curve else default_colors['disk_write'],
-            'net_sent': self.net_sent_curve.opts['pen'].color().name() if self.net_sent_curve else default_colors['net_sent'],
-            'net_recv': self.net_recv_curve.opts['pen'].color().name() if self.net_recv_curve else default_colors['net_recv'],
-        }
-        
-        # Create dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Graph Colors")
-        dialog.setModal(True)  # CRITICAL: Ensure dialog appears on top and blocks main window
-        dialog.resize(600, 500)
-        
-        layout = QVBoxLayout()
-        
-        # Graph selector
-        selector_layout = QHBoxLayout()
-        selector_label = QLabel("Select Element:")
-        self.graph_selector = QComboBox()
-        
-        graph_elements = [
-            "CPU Usage Curve",
-            "Disk Read Curve", 
-            "Disk Write Curve",
-            "Network Send Curve",
-            "Network Receive Curve",
-            "Background Color",
-            "Grid Color"
-        ]
-        self.graph_selector.addItems(graph_elements)
-        
-        selector_layout.addWidget(selector_label)
-        selector_layout.addWidget(self.graph_selector)
-        layout.addLayout(selector_layout)
-        
-        # Color selection
-        color_layout = QHBoxLayout()
-        color_label = QLabel("Choose Color:")
-        self.color_display = QLabel("Current: None")
-        self.color_display.setStyleSheet("border: 1px solid #ccc; padding: 5px; min-width: 100px;")
-        
-        select_button = QPushButton("Select Color")
-        select_button.clicked.connect(self.select_graph_color)
-        
-        color_layout.addWidget(color_label)
-        color_layout.addWidget(self.color_display)
-        color_layout.addWidget(select_button)
-        layout.addLayout(color_layout)
-        
-        # Preview area
-        preview_label = QLabel("Preview:")
-        preview_label.setStyleSheet("font-weight: bold; margin: 10px 0;")
-        layout.addWidget(preview_label)
-        
-        # Buttons
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        
-        apply_button = QPushButton("Apply to Selected")
-        apply_button.clicked.connect(self.apply_graph_color)
-        apply_button.setStyleSheet("background-color: #2196F3; color: white; padding: 8px; border: none; font-weight: bold;")
-        
-        reset_button = QPushButton("Reset to Defaults")
-        reset_button.clicked.connect(self.reset_graph_colors)
-        
-        button_layout.addWidget(apply_button)
-        button_layout.addWidget(reset_button)
-        layout.addLayout(button_layout)
-        
-        dialog.setLayout(layout)
-        
-        # Update display initially
-        self.update_graph_color_display()
-        
-        # Show dialog
-        dialog.exec_()
-    
-    def select_graph_color(self):
-        """Open color picker for selected graph element"""
-        from PyQt5.QtWidgets import QColorDialog
-        from PyQt5.QtGui import QColor
-        
-        # Map display names to internal keys
-        element_map = {
-            "CPU Usage Curve": "cpu",
-            "Disk Read Curve": "disk_read",
-            "Disk Write Curve": "disk_write",
-            "Network Send Curve": "net_sent",
-            "Network Receive Curve": "net_recv",
-            "Background Color": "background",
-            "Grid Color": "grid"
-        }
-        
-        current_colors = self.get_current_graph_colors()
-        selected_element = self.graph_selector.currentText()
-        color_key = element_map.get(selected_element)
-        current_color = current_colors.get(color_key, '#ffffff') if color_key else '#ffffff'
-        
-        # Open color dialog with current color
-        color = QColorDialog.getColor(QColor(current_color), self, "Select Color")
-        if color.isValid():
-            # Update display
-            self.color_display.setText(f"Current: {color.name()}")
-            self.color_display.setStyleSheet(f"background-color: {color.name()}; color: white; padding: 5px; min-width: 100px; font-weight: bold;")
-    
-    def apply_graph_color(self):
-        """Apply selected color to chosen graph element"""
-        selected_element = self.graph_selector.currentText()
-        color_text = self.color_display.text().replace("Current: ", "")
-        
-        if color_text and color_text != "None":
-            from PyQt5.QtGui import QColor
-            color = QColor(color_text)
-            if color.isValid():
-                self.apply_color_to_element(selected_element, color)
-                
-                # Save to preferences
-                self.save_graph_colors_preference(selected_element, color.name())
-    
-    def apply_color_to_element(self, element, color):
-        """Apply color to specific graph element"""
-        color_pen = pg.mkPen(color=color, width=self.line_thickness)
-        
-        if element == "CPU Usage Curve":
-            self.cpu_curve.setPen(color_pen)
-        elif element == "Disk Read Curve":
-            self.disk_read_curve.setPen(color_pen)
-        elif element == "Disk Write Curve":
-            self.disk_write_curve.setPen(color_pen)
-        elif element == "Network Send Curve":
-            self.net_sent_curve.setPen(color_pen)
-        elif element == "Network Receive Curve":
-            self.net_recv_curve.setPen(color_pen)
-        elif element == "Background Color":
-            self.cpu_plot.setBackground(color)
-            self.disk_plot.setBackground(color)
-            self.net_plot.setBackground(color)
-        elif element == "Grid Color":
-            # Apply to all plots
-            for plot in [self.cpu_plot, self.disk_plot, self.net_plot]:
-                plot.showGrid(x=True, y=True, alpha=0.3)
-    
-    def reset_graph_colors(self):
-        """Reset all graph colors to defaults"""
-        default_colors = {
-            'cpu': '#00ff00',      # Bright green
-            'disk_read': '#ff6b6b',  # Red
-            'disk_write': '#4ecdc4', # Cyan
-            'net_sent': '#ff9ff3',   # Pink
-            'net_recv': '#00bcd4',   # Blue
-        }
-        
-        # Apply defaults
-        self.apply_color_to_element("CPU Usage Curve", QColor(default_colors['cpu']))
-        self.apply_color_to_element("Disk Read Curve", QColor(default_colors['disk_read']))
-        self.apply_color_to_element("Disk Write Curve", QColor(default_colors['disk_write']))
-        self.apply_color_to_element("Network Send Curve", QColor(default_colors['net_sent']))
-        self.apply_color_to_element("Network Receive Curve", QColor(default_colors['net_recv']))
-        
-        # Reset background and grid to theme defaults
-        self.apply_system_theme_to_plots()
-
-    def customize_line_thickness(self):
-        """Open dialog to adjust graph line thickness"""
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox, QPushButton, QFrame
-
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Line Thickness")
-        dialog.setModal(True)
-        dialog.setMinimumWidth(300)
-
-        layout = QVBoxLayout()
-
-        # Description
-        desc_label = QLabel("Adjust the thickness of graph lines (1-10 pixels):")
-        layout.addWidget(desc_label)
-
-        # Spinbox for thickness
-        thickness_layout = QHBoxLayout()
-        thickness_label = QLabel("Thickness:")
-        thickness_layout.addWidget(thickness_label)
-
-        self.thickness_spinbox = QSpinBox()
-        self.thickness_spinbox.setRange(1, 10)
-        self.thickness_spinbox.setValue(self.line_thickness)
-        self.thickness_spinbox.setSuffix(" px")
-        thickness_layout.addWidget(self.thickness_spinbox)
-        thickness_layout.addStretch()
-        layout.addLayout(thickness_layout)
-
-        # Preview frame
-        preview_frame = QFrame()
-        preview_frame.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
-        preview_frame.setMinimumHeight(60)
-        preview_layout = QVBoxLayout(preview_frame)
-
-        self.preview_label = QLabel()
-        self.preview_label.setAlignment(Qt.AlignCenter)
-        self.update_thickness_preview()
-        preview_layout.addWidget(self.preview_label)
-        layout.addWidget(preview_frame)
-
-        # Connect spinbox to preview update
-        self.thickness_spinbox.valueChanged.connect(self.update_thickness_preview)
-
-        # Buttons
-        button_layout = QHBoxLayout()
-        apply_btn = QPushButton("Apply")
-        apply_btn.clicked.connect(lambda: self.apply_line_thickness_from_dialog(dialog))
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(dialog.reject)
-        button_layout.addStretch()
-        button_layout.addWidget(apply_btn)
-        button_layout.addWidget(cancel_btn)
-        layout.addLayout(button_layout)
-
-        dialog.setLayout(layout)
-        dialog.exec_()
-
-    def update_thickness_preview(self):
-        """Update the preview label to show sample line thickness"""
-        thickness = self.thickness_spinbox.value()
-        # Create a visual representation using Unicode block characters
-        line_char = "━" * 20  # Heavy horizontal line
-        self.preview_label.setText(f"<span style='font-size: {8 + thickness}pt;'>{line_char}</span>")
-        self.preview_label.setToolTip(f"Preview: {thickness}px thickness")
-
-    def apply_line_thickness_from_dialog(self, dialog):
-        """Apply the selected line thickness and close dialog"""
-        self.line_thickness = self.thickness_spinbox.value()
-        self.apply_line_thickness()
-        self.save_line_thickness_preference()
-        dialog.accept()
-
-    def apply_line_thickness(self):
-        """Apply current line thickness to all graph curves"""
-        # Get current colors from each curve
-        cpu_color = self.cpu_curve.opts['pen'].color()
-        disk_read_color = self.disk_read_curve.opts['pen'].color()
-        disk_write_color = self.disk_write_curve.opts['pen'].color()
-        net_sent_color = self.net_sent_curve.opts['pen'].color()
-        net_recv_color = self.net_recv_curve.opts['pen'].color()
-
-        # Rebuild pens with new thickness
-        self.cpu_curve.setPen(pg.mkPen(color=cpu_color, width=self.line_thickness))
-        self.disk_read_curve.setPen(pg.mkPen(color=disk_read_color, width=self.line_thickness))
-        self.disk_write_curve.setPen(pg.mkPen(color=disk_write_color, width=self.line_thickness))
-        self.net_sent_curve.setPen(pg.mkPen(color=net_sent_color, width=self.line_thickness))
-        self.net_recv_curve.setPen(pg.mkPen(color=net_recv_color, width=self.line_thickness))
-
-    def save_line_thickness_preference(self):
-        """Save line thickness preference to config file"""
-        try:
-            # Load existing preferences
-            preferences = {}
-            if os.path.exists(self.preferences_file):
-                with open(self.preferences_file, 'r') as f:
-                    preferences = json.load(f)
-
-            # Save line thickness
-            preferences['line_thickness'] = self.line_thickness
-
-            # Write back to file
-            with open(self.preferences_file, 'w') as f:
-                json.dump(preferences, f, indent=4)
-
-        except Exception as e:
-            print(f"Failed to save line thickness preference: {e}")
-
-    def load_line_thickness_preference(self):
-        """Load saved line thickness preference and apply it"""
-        try:
-            if os.path.exists(self.preferences_file):
-                with open(self.preferences_file, 'r') as f:
-                    preferences = json.load(f)
-
-                if 'line_thickness' in preferences:
-                    self.line_thickness = preferences['line_thickness']
-                    # Clamp to valid range
-                    self.line_thickness = max(1, min(10, self.line_thickness))
-                    self.apply_line_thickness()
-                    print(f"✅ Loaded line thickness preference: {self.line_thickness}px")
-
-        except Exception as e:
-            print(f"Failed to load line thickness preference: {e}")
-
-    def get_current_graph_colors(self):
-        """Get current colors from all plot elements"""
-        try:
-            colors = {}
-            
-            # Get colors from CPU plot
-            if hasattr(self, 'cpu_curve') and self.cpu_curve:
-                colors['cpu'] = self.cpu_curve.opts['pen'].color().name()
-            
-            # Get colors from Disk plot
-            if hasattr(self, 'disk_read_curve') and self.disk_read_curve:
-                colors['disk_read'] = self.disk_read_curve.opts['pen'].color().name()
-            if hasattr(self, 'disk_write_curve') and self.disk_write_curve:
-                colors['disk_write'] = self.disk_write_curve.opts['pen'].color().name()
-            
-            # Get colors from Network plot
-            if hasattr(self, 'net_sent_curve') and self.net_sent_curve:
-                colors['net_sent'] = self.net_sent_curve.opts['pen'].color().name()
-            if hasattr(self, 'net_recv_curve') and self.net_recv_curve:
-                colors['net_recv'] = self.net_recv_curve.opts['pen'].color().name()
-            
-            return colors
-        except:
-            return {}
-    
-    def save_graph_colors_preference(self, element, color):
-        """Save graph color preference to config"""
-        try:
-            # Load existing preferences
-            preferences = {}
-            if os.path.exists(self.preferences_file):
-                with open(self.preferences_file, 'r') as f:
-                    preferences = json.load(f)
-            
-            # Ensure graph_colors section exists
-            if 'graph_colors' not in preferences:
-                preferences['graph_colors'] = {}
-            
-            # Save the color preference
-            if element and color:
-                preferences['graph_colors'][element] = color
-            
-            # Write back to file
-            with open(self.preferences_file, 'w') as f:
-                json.dump(preferences, f, indent=4)
-            
-        except Exception as e:
-            print(f"Failed to save graph color preference: {e}")
-    
-    def load_graph_colors_preferences(self):
-        """Load saved graph colors and apply them"""
-        try:
-            if os.path.exists(self.preferences_file):
-                with open(self.preferences_file, 'r') as f:
-                    preferences = json.load(f)
-                
-                # Apply saved graph colors
-                if 'graph_colors' in preferences:
-                    saved_colors = preferences['graph_colors']
-                    
-                    # Apply each saved color
-                    for element, color_hex in saved_colors.items():
-                        if color_hex:  # Skip None values
-                            from PyQt5.QtGui import QColor
-                            color = QColor(color_hex)
-                            if color.isValid():
-                                self.apply_color_to_element(element, color)
-                    
-                    print("✅ Loaded saved graph colors preferences")
-                
-        except Exception as e:
-            print(f"Failed to load graph colors preferences: {e}")
-            # Apply default colors on error
-            self.reset_graph_colors()
-    
-    def update_graph_color_display(self):
-        """Update the color display when selection changes"""
-        selected_element = self.graph_selector.currentText()
-        current_colors = self.get_current_graph_colors()
-        current_color = current_colors.get(selected_element, 'None')
-        
-        if current_color == 'None':
-            self.color_display.setText("Current: None (Theme Default)")
-            self.color_display.setStyleSheet("border: 1px solid #ccc; padding: 5px; min-width: 100px; background: #f5f5f5;")
-        else:
-            self.color_display.setText(f"Current: {current_color}")
-            from PyQt5.QtGui import QColor
-            color = QColor(current_color)
-            if color.isValid():
-                self.color_display.setStyleSheet(f"background-color: {current_color}; color: white; padding: 5px; min-width: 100px; font-weight: bold;")
-    
-    def set_window_transparency(self, transparency):
-        """Set window transparency (0.0 to 1.0)"""
-        self.transparency = max(0.1, min(1.0, transparency))  # Clamp between 0.1 and 1.0
-        self.setWindowOpacity(self.transparency)
-    
-    def change_transparency(self):
-        """Change window transparency through slider dialog"""
-        from PyQt5.QtWidgets import QSlider, QVBoxLayout, QHBoxLayout, QLabel, QDialog
-        
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Window Transparency")
-        dialog.setModal(True)
-        
-        layout = QVBoxLayout()
-        
-        # Explanation label
-        info_label = QLabel("Set window transparency for see-through mode:\n")
-        info_label.setWordWrap(True)
-        layout.addWidget(info_label)
-        
-        # Current value label
-        value_label = QLabel(f"Current: {int(self.transparency * 100)}%")
-        layout.addWidget(value_label)
-        
-        # Transparency slider
-        slider = QSlider(Qt.Horizontal)
-        slider.setMinimum(10)  # 10% minimum for visibility
-        slider.setMaximum(100)  # 100% = fully opaque
-        slider.setValue(int(self.transparency * 100))
-        slider.setTickPosition(QSlider.TicksBelow)
-        slider.setTickInterval(10)
-        layout.addWidget(slider)
-        
-        # Percentage labels
-        percent_layout = QHBoxLayout()
-        percent_layout.addWidget(QLabel("10%"))
-        percent_layout.addStretch()
-        percent_layout.addWidget(QLabel("50%"))
-        percent_layout.addStretch()
-        percent_layout.addWidget(QLabel("100%"))
-        layout.addLayout(percent_layout)
-        
-        # Buttons
-        button_layout = QHBoxLayout()
-        ok_button = QPushButton("OK")
-        cancel_button = QPushButton("Cancel")
-        reset_button = QPushButton("Reset")
-        
-        button_layout.addWidget(reset_button)
-        button_layout.addStretch()
-        button_layout.addWidget(cancel_button)
-        button_layout.addWidget(ok_button)
-        layout.addLayout(button_layout)
-        
-        dialog.setLayout(layout)
-        
-        # Connect signals
-        def update_value(value):
-            value_label.setText(f"Current: {value}%")
-            # Preview transparency in real-time
-            self.set_window_transparency(value / 100.0)
-        
-        def reset_transparency():
-            slider.setValue(100)
-        
-        def accept_changes():
-            self.transparency = slider.value() / 100.0
-            self.save_preferences()
-            dialog.accept()
-        
-        def reject_changes():
-            # Restore original transparency
-            self.set_window_transparency(self.transparency)
-            dialog.reject()
-        
-        slider.valueChanged.connect(update_value)
-        ok_button.clicked.connect(accept_changes)
-        cancel_button.clicked.connect(reject_changes)
-        reset_button.clicked.connect(reset_transparency)
-        
-        # Store original transparency in case of cancel
-        original_transparency = self.transparency
-        
-        # Show dialog
-        dialog.exec_()
-        
-        # If dialog was rejected, restore original
-        if dialog.result() == QDialog.Rejected:
-            self.set_window_transparency(original_transparency)
-    
-    def set_always_on_top(self, always_on_top):
-        """Set window always on top state"""
-        self.always_on_top = always_on_top
-        
-        # Set window flags based on always on top state
-        flags = self.windowFlags()
-        if always_on_top:
-            # Add WindowStaysOnTopHint flag
-            self.setWindowFlags(flags | Qt.WindowStaysOnTopHint)
-        else:
-            # Remove WindowStaysOnTopHint flag
-            self.setWindowFlags(flags & ~Qt.WindowStaysOnTopHint)
-        
-        # Show the window again to apply the new flags
-        self.show()
-    
-    def toggle_always_on_top(self):
-        """Toggle always on top state"""
-        self.always_on_top = not self.always_on_top
-        self.set_always_on_top(self.always_on_top)
-        self.save_preferences()
-    
-    # Help Menu Methods
-
-    def show_changelog(self):
-        """Show changelog dialog with rendered markdown"""
-        changelog_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'CHANGELOG.md')
-        github_url = 'https://raw.githubusercontent.com/juren53/system-monitor/main/docs/CHANGELOG.md'
-
-        markdown_content, source_info = self.load_document_with_fallback(
-            changelog_path, github_url, 'ChangeLog'
-        )
-
-        # Append source info if loaded from GitHub
-        if source_info:
-            markdown_content += source_info
-
-        # Convert markdown to HTML
-        html_content = self.render_markdown_to_html(markdown_content)
-
-        # Create dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("SysMon ChangeLog")
-        dialog.setModal(True)
-        dialog.resize(900, 700)
-
-        # Use QTextBrowser instead of QTextEdit for better HTML rendering
-        text_browser = QTextBrowser()
-        text_browser.setReadOnly(True)
-        text_browser.setOpenExternalLinks(True)  # Allow clicking links
-        text_browser.setHtml(html_content)
-
-        # Remove extra stylesheet since HTML has embedded CSS
-        text_browser.setStyleSheet("QTextBrowser { border: none; }")
-
-        # Close button
-        close_button = QPushButton("Close")
-        close_button.clicked.connect(dialog.accept)
-
-        # Layout
-        layout = QVBoxLayout()
-        layout.addWidget(text_browser)
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(close_button)
-        button_layout.addStretch()
-
-        layout.addLayout(button_layout)
-        dialog.setLayout(layout)
-
-        dialog.exec_()
-    
-    def show_about(self):
-        """Show enhanced about dialog with version and timestamp info"""
-        # Calculate runtime information
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        uptime = datetime.datetime.now() - APPLICATION_START_TIME
-        uptime_str = str(uptime).split('.')[0]  # Remove microseconds
-        
-        # Create custom dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("About SysMon")
-        dialog.setModal(True)
-        dialog.resize(800, 500)  # Wider, more compact size - better for small screens
-        
-        layout = QVBoxLayout()
-        
-        about_text = f"""
-        <div style='font-family: Arial, sans-serif; margin: 15px;'>
-            <div style='text-align: center; margin-bottom: 20px;'>
-                <h2 style='margin: 0; color: #2196F3;'>SysMon - PyQtGraph Edition</h2>
-                <p style='margin: 5px 0; color: #666; font-size: 14px;'>Real-time system monitoring with PyQtGraph</p>
-            </div>
-            
-            <div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
-                <b style='color: #333;'>Version & Runtime:</b><br>
-                <span style='color: #555;'>
-                {FULL_VERSION} • Built: {BUILD_INFO} • Released: {RELEASE_DATE}<br>
-                Runtime: {uptime_str} • Python {PYTHON_VERSION}
-                </span>
-            </div>
-            
-            <div style='background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
-                <b style='color: #333;'>System:</b><br>
-                <span style='color: #555;'>{PLATFORM_INFO}</span>
-            </div>
-            
-            <div style='background-color: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
-                <b style='color: #333;'>Core Features:</b><br>
-                <span style='color: #555; font-size: 0.9em;'>
-                • Real-time CPU, Disk I/O, Network monitoring with smooth graphs<br>
-                • Live RAM & Swap memory display with GB formatting<br>
-                • Process drill-down analysis and resource tracking<br>
-                • Window transparency, always-on-top, XDG compliance
-                </span>
-            </div>
-            
-            <div style='background-color: #f3e5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
-                <b style='color: #333;'>Libraries:</b><br>
-                <span style='color: #555; font-size: 0.9em;'>
-                PyQt5 GUI Framework • PyQtGraph Plotting • psutil System Info
-                </span>
-            </div>
-            
-            <div style='text-align: center; margin-top: 10px; color: #666; font-size: 0.9em;'>
-                <b>Author:</b> System Monitor Project
-            </div>
-        </div>
-        """
-        
-        # Create text area with HTML content
-        text_area = QTextEdit()
-        text_area.setReadOnly(True)
-        text_area.setHtml(about_text)
-        text_area.setStyleSheet("""
-            QTextEdit {
-                border: none;
-                background-color: #ffffff;
-                padding: 0px;
-            }
-        """)
-        layout.addWidget(text_area)
-        
-        # Add close button
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        
-        close_button = QPushButton("Close")
-        close_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
-            QPushButton:pressed {
-                background-color: #0D47A1;
-            }
-        """)
-        close_button.clicked.connect(dialog.accept)
-        button_layout.addWidget(close_button)
-        
-        layout.addLayout(button_layout)
-        dialog.setLayout(layout)
-        
-        # Center dialog on screen
-        dialog.setGeometry(
-            dialog.x() + (dialog.width() // 2),
-            dialog.y() + (dialog.height() // 2),
-            dialog.width(),
-            dialog.height()
-        )
-        
-        # Show dialog
-        dialog.exec_()
-    
-    def show_users_guide(self):
-        """Show users guide dialog with rendered markdown"""
-        users_guide_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'users-guide.md')
-        github_url = 'https://raw.githubusercontent.com/juren53/system-monitor/main/docs/users-guide.md'
-
-        markdown_content, source_info = self.load_document_with_fallback(
-            users_guide_path, github_url, 'Users Guide'
-        )
-
-        # Append source info if loaded from GitHub
-        if source_info:
-            markdown_content += source_info
-
-        # Convert markdown to HTML
-        html_content = self.render_markdown_to_html(markdown_content)
-
-        # Create dialog (same as changelog but larger)
-        dialog = QDialog(self)
-        dialog.setWindowTitle("SysMon Users Guide")
-        dialog.setModal(True)
-        dialog.resize(1000, 750)
-
-        text_browser = QTextBrowser()
-        text_browser.setReadOnly(True)
-        text_browser.setOpenExternalLinks(True)
-        text_browser.setHtml(html_content)
-        text_browser.setStyleSheet("QTextBrowser { border: none; }")
-
-        # Close button and layout (same as changelog)
-        close_button = QPushButton("Close")
-        close_button.clicked.connect(dialog.accept)
-
-        layout = QVBoxLayout()
-        layout.addWidget(text_browser)
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(close_button)
-        button_layout.addStretch()
-
-        layout.addLayout(button_layout)
-        dialog.setLayout(layout)
-
-        dialog.exec_()
-    
-    def show_realtime_processes(self, metric_type):
-        """Show real-time process monitoring dialog"""
-        if metric_type == 'cpu':
-            dialog = RealTimeProcessDialog(self)
-            dialog.exec_()
-
-    def show_realtime_disk(self):
-        """Show real-time disk I/O monitoring dialog"""
-        dialog = RealTimeDiskDialog(self)
-        dialog.exec_()
-
-    def show_realtime_network(self):
-        """Show real-time network monitoring dialog"""
-        dialog = RealTimeNetworkDialog(self)
-        dialog.exec_()
-
-    def show_keyboard_shortcuts(self):
-        """Show keyboard shortcuts dialog with rendered markdown"""
-        shortcuts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'keyboard-shortcuts.md')
-        github_url = 'https://raw.githubusercontent.com/juren53/system-monitor/main/docs/keyboard-shortcuts.md'
-
-        markdown_content, source_info = self.load_document_with_fallback(
-            shortcuts_path, github_url, 'Keyboard Shortcuts'
-        )
-
-        # Append source info if loaded from GitHub
-        if source_info:
-            markdown_content += source_info
-
-        # Convert markdown to HTML
-        html_content = self.render_markdown_to_html(markdown_content)
-
-        # Create dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("SysMon Keyboard Shortcuts")
-        dialog.setModal(True)
-        dialog.resize(800, 650)
-
-        text_browser = QTextBrowser()
-        text_browser.setReadOnly(True)
-        text_browser.setOpenExternalLinks(True)
-        text_browser.setHtml(html_content)
-        text_browser.setStyleSheet("QTextBrowser { border: none; }")
-
-        # Close button and layout
-        close_button = QPushButton("Close")
-        close_button.clicked.connect(dialog.accept)
-
-        layout = QVBoxLayout()
-        layout.addWidget(text_browser)
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(close_button)
-        button_layout.addStretch()
-
-        layout.addLayout(button_layout)
-        dialog.setLayout(layout)
-
-        dialog.exec_()
-
-    def show_issue_tracker(self):
-        """Open SysMon issue tracker in default web browser"""
-        try:
-            webbrowser.open('https://github.com/juren53/system-monitor/issues')
-        except Exception as e:
-            QMessageBox.warning(
-                self,
-                'Unable to Open Browser',
-                f'Could not open issue tracker in browser.\n\n'
-                f'Please visit:\nhttps://github.com/juren53/system-monitor/issues\n\n'
-                f'Error: {str(e)}'
-            )
-
-    def show_changelog_github(self):
-        """Open SysMon ChangeLog on GitHub in default web browser"""
-        try:
-            webbrowser.open('https://github.com/juren53/system-monitor/blob/main/docs/CHANGELOG.md')
-        except Exception as e:
-            QMessageBox.warning(
-                self,
-                'Unable to Open Browser',
-                f'Could not open ChangeLog in browser.\n\n'
-                f'Please visit:\nhttps://github.com/juren53/system-monitor/blob/main/docs/CHANGELOG.md\n\n'
-                f'Error: {str(e)}'
-            )
-
-
-
-
-
-
-
-
-
 def main():
     app = QApplication(sys.argv)
-    
+
     # Check for existing instance before creating any windows
     if not check_single_instance():
         show_instance_already_running(app)
         return 1  # Exit with error code
-    
+
     # Set application icon and desktop filename (Linux taskbar association)
     app.setDesktopFileName("sysmon")  # must match sysmon.desktop
     set_application_icon(app)

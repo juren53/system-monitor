@@ -8,3 +8,7 @@ from .theme import ThemeMixin
 from .menu import MenuMixin
 from .updates import UpdatesMixin
 from .markdown_render import MarkdownMixin
+from .data import DataMixin
+from .window import WindowMixin
+from .settings import SettingsMixin
+from .about import AboutMixin
