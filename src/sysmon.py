@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SysMon - PyQtGraph-based System Monitor v0.3.0
+SysMon - PyQtGraph-based System Monitor v0.3.1
 Release: 2026-02-04 1847 CST
 
 Real-time CPU, Disk I/O, and Network monitoring with smooth performance
