@@ -1,11 +1,12 @@
 # Changelog - sysmon.py
 
-## 2026-02-08 0859 CST - Modular Architecture Refactoring [ v0.3.1 ]
+## 2026-02-08 0918 CST - Modular Architecture Refactoring [ v0.4.0 ]
 
-### REFACTORING: Modular Package Architecture (Phases 1 & 2)
+### MAJOR REFACTORING: Complete Modular Package Architecture
 - **No behavior changes** — application works identically before and after
-- **Monolithic `sysmon.py` reduced from 4,153 to 1,888 lines** (54% reduction)
-- **Mixin pattern** decomposes `SystemMonitor` class — methods stay identical, `self` references all work
+- **Monolithic `sysmon.py` reduced from 4,153 to 266 lines** (93% reduction)
+- **Mixin pattern** decomposes `SystemMonitor` class into 8 focused modules
+- **`SystemMonitor` now inherits from**: `ThemeMixin`, `MenuMixin`, `UpdatesMixin`, `MarkdownMixin`, `DataMixin`, `WindowMixin`, `SettingsMixin`, `AboutMixin`, `QMainWindow`
 
 ### Phase 1 — Standalone Modules Extracted
 - **`sysmon/constants.py`** (24 lines): VERSION, build info, runtime info
@@ -17,23 +18,30 @@
 - **`sysmon/dialogs/config_viewer.py`** (95 lines): ConfigFileViewerDialog
 
 ### Phase 2 — Mixin Classes Extracted
-- **`sysmon/theme.py`** (186 lines): `setup_pyqtgraph_theme`, `is_dark_theme`, `apply_application_theme`, `get_dialog_theme_colors`, `apply_system_theme_to_plots`
-- **`sysmon/menu.py`** (192 lines): `setup_menu_bar` — complete menu bar construction
-- **`sysmon/updates.py`** (245 lines): `check_for_updates`, `show_update_available_dialog`, `skip_update_version`, `toggle_auto_check_updates`, `check_updates_on_startup`, `show_startup_update_notification`
-- **`sysmon/markdown_render.py`** (248 lines): `render_markdown_to_html`, `load_document_with_fallback`
+- **`sysmon/theme.py`** (186 lines): Theme detection, palette application, plot theming
+- **`sysmon/menu.py`** (192 lines): Complete menu bar construction
+- **`sysmon/updates.py`** (245 lines): GitHub version checking and update notifications
+- **`sysmon/markdown_render.py`** (248 lines): Markdown→HTML with GitHub styling and Pygments
+
+### Phase 3 — Complete Decomposition
+- **`sysmon/data.py`** (127 lines): Timer, data collection, plot updates, smoothing
+- **`sysmon/window.py`** (353 lines): Keyboard/mouse events, window positioning, geometry persistence, transparency, always-on-top, fullscreen
+- **`sysmon/settings.py`** (757 lines): All config dialogs, graph colors, line thickness, smoothing controls, preferences, data export, view toggles
+- **`sysmon/about.py`** (406 lines): Help dialogs, about, changelog, users guide, keyboard shortcuts, process drill-down launchers
 
 ### Dependency Change
-- **`version-checker-module`** added to `requirements.txt` as a pip-installable dependency from GitHub (`git+https://github.com/juren53/version-checker-module.git`)
-- Removed vendored `scripts/github_version_checker.py` from import path — now installed via pip
+- **`version-checker-module`** added to `requirements.txt` as pip-installable dependency from GitHub
+- Added `pyproject.toml` to [version-checker-module](https://github.com/juren53/version-checker-module) repo (v1.1.0) enabling: `pip install git+https://github.com/juren53/version-checker-module.git`
 - Graceful fallback still in place via `try/except ImportError`
 
 ### Files Added
 - `src/sysmon/__init__.py`, `constants.py`, `config.py`, `platform.py`
 - `src/sysmon/theme.py`, `menu.py`, `updates.py`, `markdown_render.py`
+- `src/sysmon/data.py`, `window.py`, `settings.py`, `about.py`
 - `src/sysmon/dialogs/__init__.py`, `process.py`, `disk.py`, `network.py`, `config_viewer.py`
 
 ### Files Modified
-- **`src/sysmon.py`**: Reduced from 4,153 to 1,888 lines; now uses mixin inheritance
+- **`src/sysmon.py`**: Reduced from 4,153 to 266 lines; now contains only `__init__`, `setup_ui`, and `main()`
 - **`requirements.txt`**: Added `version-checker-module` dependency
 
 ---
