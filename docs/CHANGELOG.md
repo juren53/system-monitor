@@ -1,5 +1,19 @@
 # Changelog - sysmon.py
 
+## 2026-02-10 2305 CST - Desktop Integration Scripts [ v0.4.1 ]
+
+### New Files
+- **`install-desktop.sh`**: Linux desktop entry installer for SysMon
+- **`install_system_packages.sh`**: System package dependency installer
+- **`uninstall-desktop.sh`**: Desktop entry uninstaller
+
+### Housekeeping
+- Normalized CRLF to LF line endings in archive files
+- Recreated Python virtual environment with all dependencies
+- Version bump to v0.4.1 across constants.py, README.md, CLAUDE.md
+
+---
+
 ## 2026-02-08 0918 CST - Modular Architecture Refactoring [ v0.4.0 ]
 
 ### MAJOR REFACTORING: Complete Modular Package Architecture
