@@ -1,7 +1,7 @@
 # SysMon Users Guide
 
-**Version:** v0.2.9 (Production Release)  
-**Updated:** 2025-12-23  
+**Version:** v0.4.2 (Production Release)
+**Updated:** 2026-02-15
 
 ## Table of Contents
 
@@ -108,8 +108,8 @@ All graphs update in real-time with smooth scrolling:
 
 ### Graph Controls
 
-#### Double-Click for Analysis
-- **Action**: Double-click any graph to show top 10 processes
+#### Middle-Click for Analysis
+- **Action**: Middle-click (scroll wheel click) any graph to open real-time process monitor
 - **Progress**: Analysis shows progress bar with cancellation option
 - **Results**: Displays processes sorted by resource usage
 
@@ -152,7 +152,7 @@ All graphs update in real-time with smooth scrolling:
 
 ### Triggering Analysis
 
-Double-click any graph to see detailed process analysis:
+Middle-click (scroll wheel click) any graph to open real-time process analysis:
 
 - **CPU Graph**: Top CPU consumers by percentage
 - **Disk Graph**: Top disk I/O processes by megabytes transferred
@@ -276,6 +276,13 @@ All configuration options are detailed in [Configuration Menu](#7-configuration-
 | F11 | Toggle Fullscreen | Switch between normal/fullscreen mode |
 | Esc | Close Dialog | Close active dialog window |
 
+### Mouse Actions
+
+| Action | Target | Description |
+|--------|--------|-------------|
+| Left-Click | Window | Minimize application to taskbar |
+| Middle-Click | Graph | Open real-time drill-down process dialog |
+
 ### Navigation Shortcuts
 
 | Shortcut | Action | Description |
@@ -318,7 +325,7 @@ All configuration options are detailed in [Configuration Menu](#7-configuration-
 
 #### Drill-Down Analysis Fails
 
-**Problem**: Double-clicking graphs doesn't show results
+**Problem**: Middle-clicking graphs doesn't show results
 **Solutions**:
 1. Wait for analysis: Progress bar shows completion status
 2. Check permissions: Some processes require elevated access
