@@ -34,7 +34,11 @@ class IconLoader:
             If None, defaults to: <project_root>/icons
         """
         if base_path is None:
-            base_path = pathlib.Path(__file__).resolve().parent.parent / "icons"
+            # PyInstaller extracts bundled data to sys._MEIPASS
+            if getattr(sys, '_MEIPASS', None):
+                base_path = pathlib.Path(sys._MEIPASS) / "icons"
+            else:
+                base_path = pathlib.Path(__file__).resolve().parent.parent / "icons"
 
         self.base_path = base_path.resolve()
 
