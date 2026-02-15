@@ -1,5 +1,26 @@
 # Changelog - sysmon.py
 
+## 2026-02-15 1136 CST - Mouse Button Remapping [ v0.4.2 ]
+
+### Changed: Mouse Button Assignments
+- **Left-click minimize** — left-click anywhere on the application window to instantly minimize to taskbar (previously right-click, changed to resolve right-click context menu conflict)
+- **Middle-click drill-down** — middle-click (scroll wheel click) on any graph opens the real-time process monitor dialog (previously double-click, changed to resolve left-click conflict)
+  - CPU graph → RealTimeProcessDialog
+  - Disk I/O graph → RealTimeDiskDialog
+  - Network graph → RealTimeNetworkDialog
+
+### Implementation Details
+- `mousePressEvent()` in `WindowMixin`: changed `Qt.RightButton` to `Qt.LeftButton`
+- Graph `sigMouseClicked` handlers: changed `evt.double()` to `evt.button() == Qt.MiddleButton`
+
+### Files Modified
+- **`src/sysmon/window.py`**: Updated `mousePressEvent()` to use left-click
+- **`src/sysmon.py`**: Updated all three graph click handlers to use middle-click
+- **`src/sysmon/constants.py`**: Version bump to v0.4.2
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
 ## 2026-02-10 2305 CST - Desktop Integration Scripts [ v0.4.1 ]
 
 ### New Files

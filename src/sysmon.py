@@ -172,7 +172,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         self.cpu_plot.showGrid(x=True, y=True, alpha=0.3)
         self.cpu_curve = self.cpu_plot.plot(pen=pg.mkPen(color='#00ff00', width=self.line_thickness))
         self.cpu_plot.scene().sigMouseClicked.connect(
-            lambda evt: self.show_realtime_processes('cpu') if evt.double() else None)
+            lambda evt: self.show_realtime_processes('cpu') if evt.button() == Qt.MiddleButton else None)
         main_layout.addWidget(self.cpu_plot)
 
         # Disk I/O Plot
@@ -185,7 +185,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         self.disk_write_curve = self.disk_plot.plot(pen=pg.mkPen(color='#4ecdc4', width=self.line_thickness), name='Write')
         self.disk_plot.addLegend()
         self.disk_plot.scene().sigMouseClicked.connect(
-            lambda evt: self.show_realtime_disk() if evt.double() else None)
+            lambda evt: self.show_realtime_disk() if evt.button() == Qt.MiddleButton else None)
         main_layout.addWidget(self.disk_plot)
 
         # Network Plot
@@ -198,7 +198,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         self.net_recv_curve = self.net_plot.plot(pen=pg.mkPen(color='#54a0ff', width=self.line_thickness), name='Received')
         self.net_plot.addLegend()
         self.net_plot.scene().sigMouseClicked.connect(
-            lambda evt: self.show_realtime_network() if evt.double() else None)
+            lambda evt: self.show_realtime_network() if evt.button() == Qt.MiddleButton else None)
         main_layout.addWidget(self.net_plot)
 
         # Apply plot theme now that plots exist

@@ -38,8 +38,8 @@ class WindowMixin:
             super().keyPressEvent(event)
 
     def mousePressEvent(self, event):
-        """Right-click to minimize window"""
-        if event.button() == Qt.RightButton:
+        """Left-click to minimize window"""
+        if event.button() == Qt.LeftButton:
             self.minimize_window()
         else:
             super().mousePressEvent(event)
