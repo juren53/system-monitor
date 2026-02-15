@@ -13,10 +13,14 @@
 - `mousePressEvent()` in `WindowMixin`: changed `Qt.RightButton` to `Qt.LeftButton`
 - Graph `sigMouseClicked` handlers: changed `evt.double()` to `evt.button() == Qt.MiddleButton`
 
+### Fixed: App Icon Missing in PyInstaller Builds
+- **`src/icon_loader.py`**: `IconLoader` now checks for `sys._MEIPASS` when resolving the icons directory, so the app icon loads correctly in compiled executables
+
 ### Files Modified
 - **`src/sysmon/window.py`**: Updated `mousePressEvent()` to use left-click
 - **`src/sysmon.py`**: Updated all three graph click handlers to use middle-click
 - **`src/sysmon/constants.py`**: Version bump to v0.4.2
+- **`src/icon_loader.py`**: PyInstaller icon path fix
 - **`docs/CHANGELOG.md`**: This changelog entry
 
 ---
