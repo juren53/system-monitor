@@ -24,6 +24,8 @@ wheels/
 venv/
 env/
 ENV/
+.venv/
+myenv/
 sysmon_build_env/
 
 # IDE, Editor, and AI assistants
