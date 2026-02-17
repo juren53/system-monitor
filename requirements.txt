@@ -4,4 +4,5 @@ psutil>=5.8.0
 numpy>=1.25.0
 markdown>=3.4.0
 pygments>=2.15.0
+pyqt-app-info @ git+https://github.com/juren53/pyqt-app-info.git
 version-checker-module @ git+https://github.com/juren53/version-checker-module.git

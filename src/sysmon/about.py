@@ -13,9 +13,11 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                               QProgressDialog, QApplication)
 from PyQt5.QtCore import Qt, QThread
 
+from pyqt_app_info import AppIdentity, gather_info
+
 from sysmon.constants import (VERSION, RELEASE_DATE, FULL_VERSION,
                                BUILD_INFO, APPLICATION_START_TIME,
-                               PYTHON_VERSION, PLATFORM_INFO)
+                               PYTHON_VERSION, PLATFORM_INFO, RELEASE_TIME)
 from sysmon.dialogs import (ProcessWorker, ProcessInfoDialog,
                              RealTimeProcessDialog, RealTimeDiskDialog,
                              RealTimeNetworkDialog)
@@ -165,112 +167,91 @@ class AboutMixin:
         dialog.exec_()
 
     def show_about(self):
-        """Show enhanced about dialog with version and timestamp info"""
-        # Calculate runtime information
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        uptime = datetime.datetime.now() - APPLICATION_START_TIME
-        uptime_str = str(uptime).split('.')[0]  # Remove microseconds
+        """Show about dialog using pyqt-app-info for environment details"""
+        # Gather app info via pyqt-app-info
+        identity = AppIdentity(
+            name="SysMon",
+            short_name="SysMon",
+            version=VERSION,
+            commit_date=f"{RELEASE_DATE} {RELEASE_TIME}",
+            description="Real-time system monitoring with PyQtGraph",
+            features=[
+                "Real-time CPU, Disk I/O, Network monitoring",
+                "Live RAM & Swap memory display",
+                "Process drill-down analysis",
+                "Window transparency, always-on-top, XDG compliance",
+            ],
+        )
+        info = gather_info(identity, caller_file=__file__)
 
-        # Create custom dialog
+        # Calculate runtime
+        uptime = datetime.datetime.now() - APPLICATION_START_TIME
+        uptime_str = str(uptime).split('.')[0]
+
+        # Helper to escape HTML
+        def esc(s):
+            return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+        # Build identity section HTML
+        features_html = "".join(f"<li>{esc(f)}</li>" for f in info.identity.features)
+        identity_html = f"""
+        <h3>{esc(info.identity.name)}</h3>
+        <p><b>Version:</b> {esc(info.identity.version)}</p>
+        <p><b>Commit Date:</b> {esc(info.identity.commit_date)}</p>
+        <p><b>Runtime:</b> {esc(uptime_str)}</p>
+        <br>
+        <p>{esc(info.identity.description)}</p>
+        <br>
+        <p><b>Features:</b></p>
+        <ul>{features_html}</ul>
+        """
+
+        # Build technical details section HTML
+        ex = info.execution
+        tech_html = f"""
+        <p style="font-size: 9pt; color: #666;">
+        <b>Execution Mode:</b> {esc(ex.execution_mode)}<br><br>
+        <b>Code Location:</b><br>{esc(ex.code_location)}<br><br>
+        <b>Python Executable:</b><br>{esc(ex.python_executable)}<br><br>
+        <b>Python Version:</b> {esc(ex.python_version)}<br><br>
+        <b>OS:</b> {esc(ex.os_platform)}
+        </p>
+        """
+
+        # Create dialog
         dialog = QDialog(self)
-        dialog.setWindowTitle("About SysMon")
+        dialog.setWindowTitle(f"About {info.identity.name}")
         dialog.setModal(True)
-        dialog.resize(800, 500)  # Wider, more compact size - better for small screens
+        dialog.resize(600, 500)
 
         layout = QVBoxLayout()
 
-        about_text = f"""
-        <div style='font-family: Arial, sans-serif; margin: 15px;'>
-            <div style='text-align: center; margin-bottom: 20px;'>
-                <h2 style='margin: 0; color: #2196F3;'>SysMon - PyQtGraph Edition</h2>
-                <p style='margin: 5px 0; color: #666; font-size: 14px;'>Real-time system monitoring with PyQtGraph</p>
-            </div>
+        # Identity label
+        identity_label = QLabel()
+        identity_label.setTextFormat(Qt.RichText)
+        identity_label.setWordWrap(True)
+        identity_label.setText(identity_html)
+        layout.addWidget(identity_label)
 
-            <div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
-                <b style='color: #333;'>Version & Runtime:</b><br>
-                <span style='color: #555;'>
-                {FULL_VERSION} • Built: {BUILD_INFO} • Released: {RELEASE_DATE}<br>
-                Runtime: {uptime_str} • Python {PYTHON_VERSION}
-                </span>
-            </div>
+        layout.addSpacing(10)
 
-            <div style='background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
-                <b style='color: #333;'>System:</b><br>
-                <span style='color: #555;'>{PLATFORM_INFO}</span>
-            </div>
+        # Technical details label (selectable for copying)
+        tech_label = QLabel()
+        tech_label.setTextFormat(Qt.RichText)
+        tech_label.setWordWrap(True)
+        tech_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        tech_label.setText(tech_html)
+        layout.addWidget(tech_label)
 
-            <div style='background-color: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
-                <b style='color: #333;'>Core Features:</b><br>
-                <span style='color: #555; font-size: 0.9em;'>
-                • Real-time CPU, Disk I/O, Network monitoring with smooth graphs<br>
-                • Live RAM & Swap memory display with GB formatting<br>
-                • Process drill-down analysis and resource tracking<br>
-                • Window transparency, always-on-top, XDG compliance
-                </span>
-            </div>
-
-            <div style='background-color: #f3e5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>
-                <b style='color: #333;'>Libraries:</b><br>
-                <span style='color: #555; font-size: 0.9em;'>
-                PyQt5 GUI Framework • PyQtGraph Plotting • psutil System Info
-                </span>
-            </div>
-
-            <div style='text-align: center; margin-top: 10px; color: #666; font-size: 0.9em;'>
-                <b>Author:</b> System Monitor Project
-            </div>
-        </div>
-        """
-
-        # Create text area with HTML content
-        text_area = QTextEdit()
-        text_area.setReadOnly(True)
-        text_area.setHtml(about_text)
-        text_area.setStyleSheet("""
-            QTextEdit {
-                border: none;
-                background-color: #ffffff;
-                padding: 0px;
-            }
-        """)
-        layout.addWidget(text_area)
-
-        # Add close button
+        # OK button
         button_layout = QHBoxLayout()
         button_layout.addStretch()
-
-        close_button = QPushButton("Close")
-        close_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
-            QPushButton:pressed {
-                background-color: #0D47A1;
-            }
-        """)
-        close_button.clicked.connect(dialog.accept)
-        button_layout.addWidget(close_button)
-
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(ok_button)
         layout.addLayout(button_layout)
+
         dialog.setLayout(layout)
-
-        # Center dialog on screen
-        dialog.setGeometry(
-            dialog.x() + (dialog.width() // 2),
-            dialog.y() + (dialog.height() // 2),
-            dialog.width(),
-            dialog.height()
-        )
-
-        # Show dialog
         dialog.exec_()
 
     def show_users_guide(self):

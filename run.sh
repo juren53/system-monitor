@@ -1,10 +1,15 @@
 #!/bin/bash
-# run.sh - Set up venv and run SysMon
+# SysMon launcher — creates/activates venv and installs dependencies if needed
 
-VENV_DIR=".venv"
+set -e
+
+# Resolve project directory (where this script lives)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 cd "$SCRIPT_DIR"
+
+VENV_DIR="venv"
+REQUIREMENTS="requirements.txt"
+ENTRY_POINT="src/sysmon.py"
 
 # Create venv if it doesn't exist
 if [ ! -d "$VENV_DIR" ]; then
@@ -16,15 +21,24 @@ if [ ! -d "$VENV_DIR" ]; then
     fi
 fi
 
-# Activate venv
-source "$VENV_DIR/bin/activate"
-
-# Install dependencies if needed (check for pyqtgraph as indicator)
-if ! python3 -c "import pyqtgraph" 2>/dev/null; then
-    echo "Installing dependencies..."
-    pip install --upgrade pip
-    pip install -r requirements.txt
+# Activate venv (works on Linux/macOS and Git Bash on Windows)
+if [ -f "$VENV_DIR/bin/activate" ]; then
+    source "$VENV_DIR/bin/activate"
+elif [ -f "$VENV_DIR/Scripts/activate" ]; then
+    source "$VENV_DIR/Scripts/activate"
+else
+    echo "Error: cannot find venv activate script" >&2
+    exit 1
 fi
 
-# Run SysMon with any passed arguments
-python3 src/sysmon.py "$@"
+# Install/update dependencies if requirements.txt is newer than the marker
+MARKER="$VENV_DIR/.deps_installed"
+if [ ! -f "$MARKER" ] || [ "$REQUIREMENTS" -nt "$MARKER" ]; then
+    echo "Installing dependencies..."
+    pip install --upgrade pip -q
+    pip install -r "$REQUIREMENTS" -q
+    touch "$MARKER"
+fi
+
+# Launch the application, passing through any command-line arguments
+python3 "$ENTRY_POINT" "$@"
