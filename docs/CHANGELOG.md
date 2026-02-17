@@ -1,5 +1,27 @@
 # Changelog - sysmon.py
 
+## 2026-02-17 2213 CST - pyqt-app-info Integration & run.sh Launcher [ v0.4.2 ]
+
+### New: pyqt-app-info About Dialog
+- **About dialog** now uses [pyqt-app-info](https://github.com/juren53/pyqt-app-info) core module (`AppIdentity`, `gather_info`) for automatic environment detection
+- Displays execution mode (Python source vs PyInstaller), code location, Python version, OS platform
+- Technical details section is selectable for easy copying
+- Uses PyQt5-compatible dialog (library's built-in dialog requires PyQt6)
+
+### New: run.sh Launcher Script
+- **`run.sh`**: Cross-platform launcher that auto-creates venv, installs dependencies, and launches SysMon
+- Works on Linux/macOS (`bin/activate`) and Windows/Git Bash (`Scripts/activate`)
+- Marker-based dependency tracking — only reinstalls when `requirements.txt` changes
+- Error handling for missing `python3-venv` package
+- Removed old `run-sysmon.sh` (had hardcoded paths)
+
+### Files Modified
+- **`src/sysmon/about.py`**: Replaced static HTML About dialog with pyqt-app-info-powered version
+- **`requirements.txt`**: Added `pyqt-app-info` dependency
+- **`run.sh`**: New cross-platform venv launcher (replaces `run-sysmon.sh`)
+
+---
+
 ## 2026-02-15 1136 CST - Mouse Button Remapping [ v0.4.2 ]
 
 ### Changed: Mouse Button Assignments
