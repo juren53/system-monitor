@@ -1,5 +1,539 @@
 # Changelog - sysmon.py
 
+## 2026-02-15 1136 CST - Mouse Button Remapping [ v0.4.2 ]
+
+### Changed: Mouse Button Assignments
+- **Left-click minimize** — left-click anywhere on the application window to instantly minimize to taskbar (previously right-click, changed to resolve right-click context menu conflict)
+- **Middle-click drill-down** — middle-click (scroll wheel click) on any graph opens the real-time process monitor dialog (previously double-click, changed to resolve left-click conflict)
+  - CPU graph → RealTimeProcessDialog
+  - Disk I/O graph → RealTimeDiskDialog
+  - Network graph → RealTimeNetworkDialog
+
+### Implementation Details
+- `mousePressEvent()` in `WindowMixin`: changed `Qt.RightButton` to `Qt.LeftButton`
+- Graph `sigMouseClicked` handlers: changed `evt.double()` to `evt.button() == Qt.MiddleButton`
+
+### Fixed: App Icon Missing in PyInstaller Builds
+- **`src/icon_loader.py`**: `IconLoader` now checks for `sys._MEIPASS` when resolving the icons directory, so the app icon loads correctly in compiled executables
+
+### Files Modified
+- **`src/sysmon/window.py`**: Updated `mousePressEvent()` to use left-click
+- **`src/sysmon.py`**: Updated all three graph click handlers to use middle-click
+- **`src/sysmon/constants.py`**: Version bump to v0.4.2
+- **`src/icon_loader.py`**: PyInstaller icon path fix
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
+## 2026-02-10 2305 CST - Desktop Integration Scripts [ v0.4.1 ]
+
+### New Files
+- **`install-desktop.sh`**: Linux desktop entry installer for SysMon
+- **`install_system_packages.sh`**: System package dependency installer
+- **`uninstall-desktop.sh`**: Desktop entry uninstaller
+
+### Housekeeping
+- Normalized CRLF to LF line endings in archive files
+- Recreated Python virtual environment with all dependencies
+- Version bump to v0.4.1 across constants.py, README.md, CLAUDE.md
+
+---
+
+## 2026-02-08 0918 CST - Modular Architecture Refactoring [ v0.4.0 ]
+
+### MAJOR REFACTORING: Complete Modular Package Architecture
+- **No behavior changes** — application works identically before and after
+- **Monolithic `sysmon.py` reduced from 4,153 to 266 lines** (93% reduction)
+- **Mixin pattern** decomposes `SystemMonitor` class into 8 focused modules
+- **`SystemMonitor` now inherits from**: `ThemeMixin`, `MenuMixin`, `UpdatesMixin`, `MarkdownMixin`, `DataMixin`, `WindowMixin`, `SettingsMixin`, `AboutMixin`, `QMainWindow`
+
+### Phase 1 — Standalone Modules Extracted
+- **`sysmon/constants.py`** (24 lines): VERSION, build info, runtime info
+- **`sysmon/config.py`** (59 lines): XDG paths, config load/save, legacy migration
+- **`sysmon/platform.py`** (159 lines): stderr filter, single-instance lock, app icon setup
+- **`sysmon/dialogs/process.py`** (456 lines): ProcessWorker, ProcessInfoDialog, RealTimeProcessDialog
+- **`sysmon/dialogs/disk.py`** (400 lines): DiskIOWorker, RealTimeDiskDialog
+- **`sysmon/dialogs/network.py`** (383 lines): NetworkWorker, RealTimeNetworkDialog
+- **`sysmon/dialogs/config_viewer.py`** (95 lines): ConfigFileViewerDialog
+
+### Phase 2 — Mixin Classes Extracted
+- **`sysmon/theme.py`** (186 lines): Theme detection, palette application, plot theming
+- **`sysmon/menu.py`** (192 lines): Complete menu bar construction
+- **`sysmon/updates.py`** (245 lines): GitHub version checking and update notifications
+- **`sysmon/markdown_render.py`** (248 lines): Markdown→HTML with GitHub styling and Pygments
+
+### Phase 3 — Complete Decomposition
+- **`sysmon/data.py`** (127 lines): Timer, data collection, plot updates, smoothing
+- **`sysmon/window.py`** (353 lines): Keyboard/mouse events, window positioning, geometry persistence, transparency, always-on-top, fullscreen
+- **`sysmon/settings.py`** (757 lines): All config dialogs, graph colors, line thickness, smoothing controls, preferences, data export, view toggles
+- **`sysmon/about.py`** (406 lines): Help dialogs, about, changelog, users guide, keyboard shortcuts, process drill-down launchers
+
+### Dependency Change
+- **`version-checker-module`** added to `requirements.txt` as pip-installable dependency from GitHub
+- Added `pyproject.toml` to [version-checker-module](https://github.com/juren53/version-checker-module) repo (v1.1.0) enabling: `pip install git+https://github.com/juren53/version-checker-module.git`
+- Graceful fallback still in place via `try/except ImportError`
+
+### Files Added
+- `src/sysmon/__init__.py`, `constants.py`, `config.py`, `platform.py`
+- `src/sysmon/theme.py`, `menu.py`, `updates.py`, `markdown_render.py`
+- `src/sysmon/data.py`, `window.py`, `settings.py`, `about.py`
+- `src/sysmon/dialogs/__init__.py`, `process.py`, `disk.py`, `network.py`, `config_viewer.py`
+
+### Files Modified
+- **`src/sysmon.py`**: Reduced from 4,153 to 266 lines; now contains only `__init__`, `setup_ui`, and `main()`
+- **`requirements.txt`**: Added `version-checker-module` dependency
+
+---
+
+## 2026-02-04 1847 CST - Icon Manager Module Integration [ v0.3.0 ]
+
+### NEW FEATURE: Centralized Icon Management
+- **Integrated Icon_Manager_Module** — all icon loading now goes through `IconLoader`, replacing ad-hoc path searches with a single source of truth
+- **Cross-platform icon selection** — automatically uses `.ico` (Windows), `.icns` (macOS), or multi-resolution PNGs (Linux)
+- **Multi-resolution icon assets** — generated `app_16x16.png` through `app_256x256.png` from source `ICON_SysMon.png` for crisp display at every size
+- **Windows taskbar fix** — `set_taskbar_icon()` sets per-window AppUserModelID via COM, preventing the generic Python icon on the Windows taskbar
+- **Linux desktop integration** — added `setDesktopFileName("sysmon")` so the desktop environment can associate the running window with its `.desktop` file (fixes blank taskbar/Alt+Tab icons)
+- **XDG hicolor theme icons** — installed resolution PNGs into `~/.local/share/icons/hicolor/*/apps/sysmon.png`; `.desktop` file now uses `Icon=sysmon` (theme name) instead of a fragile absolute path
+
+### Implementation Details
+- Added `src/icon_loader.py` — adapted from Icon_Manager_Module for PyQt5 with `base_path` defaulting to project `icons/` directory
+- Replaced `set_application_icon()` (40-line path search) with 2-line `IconLoader` call
+- Replaced `set_window_icon()` (20-line path search) with 2-line `IconLoader` call
+- Updated `SysMon.spec` — added `('icons', 'icons')` to `datas` list; changed `icon=` to `app.ico`
+- Updated `sysmon.desktop` — `Icon=sysmon` (theme name, no absolute path)
+
+### Files Added
+- **`src/icon_loader.py`**: Cross-platform icon loader (from Icon_Manager_Module, adapted for PyQt5)
+- **`icons/app.ico`**: Windows multi-resolution icon
+- **`icons/app.icns`**: macOS icon
+- **`icons/app.png`**: Linux default icon (256px)
+- **`icons/app_16x16.png` ... `app_256x256.png`**: Individual resolution PNGs
+
+### Files Modified
+- **`src/sysmon.py`**: Replaced icon path searches with IconLoader; added `setDesktopFileName()` and `set_taskbar_icon()` calls
+- **`SysMon.spec`**: Added icons to bundled data; updated `.ico` path
+- **`sysmon.desktop`**: Changed `Icon=` from absolute path to theme name
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
+## 2026-02-04 1803 CST - Right-Click to Minimize [ v0.2.21 ]
+
+### NEW FEATURE: Right-Click Minimize
+- **Right-click anywhere** on the application window to instantly minimize to taskbar
+- Mirrors existing Down Arrow and M key minimize shortcuts
+- No context menu — immediate minimize on right-click for fast, seamless workflow
+
+### Implementation Details
+- Added `mousePressEvent()` override to `SystemMonitor` class
+- Right mouse button triggers `minimize_window()` directly
+- All other mouse buttons passed through to default handler
+
+### Files Modified
+- **`src/sysmon.py`**: Added `mousePressEvent()` handler
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
+## 2026-02-03 0900 CST - Project Housekeeping [ v0.2.20a ]
+
+### Changed
+- **Project housekeeping** — moved plan, doc, session, and prompt files into `notes/` directory for a cleaner project root
+- **WARP.md** — renamed to `AGENTS.md` and updated header to address AI coding assistants generally
+- **Utility scripts** — moved `fix_indentation.py`, `force-icon-refresh.sh`, and `github_version_checker.py` to `scripts/`
+- **Filename typo** — renamed `DOC_GitHub_Verion_Checker.md` to `DOC_GitHub_Version_Checker.md`
+
+### Removed
+- `nul` — accidental Windows artifact
+- `-p` — empty directory from accidental `mkdir -p`
+- `sessions/` — emptied and removed (content moved to `notes/`)
+
+### Other
+- Added `.claude/settings.local.json` to `.gitignore`
+
+---
+
+## 2026-01-22 1400 CST - Adjustable Graph Line Thickness [ v0.2.20 ]
+
+### 🆕 **NEW FEATURE: User-Adjustable Graph Line Thickness**
+- **Menu Item**: Config → Line Thickness... opens adjustment dialog
+- **Thickness Range**: Adjustable from 1 to 10 pixels (default: 2px)
+- **Visual Preview**: Dialog shows sample line thickness before applying
+- **Immediate Effect**: All 5 graph curves update instantly on Apply
+- **Persistent Setting**: Thickness preference saved to preferences.json
+
+### 📝 **Implementation Details**
+- **New Instance Variable**: `self.line_thickness` stores current thickness setting
+- **Dialog Interface**: QSpinBox with 1-10 range, visual preview, Apply/Cancel buttons
+- **Apply Method**: `apply_line_thickness()` rebuilds pens for all curves with new width
+- **Save/Load**: Preference persisted in preferences.json and loaded on startup
+
+### 🎯 **User Benefits**
+- Customize graph line visibility for different monitor sizes/resolutions
+- Thicker lines (3-5px) improve visibility on high-DPI displays
+- Thinner lines (1px) show more detail on standard displays
+- Personal preference saved and restored automatically
+
+### 🔧 **Technical Details**
+- All `pg.mkPen()` calls now use `width=self.line_thickness` instead of hardcoded `2`
+- Theme application and color customization respect line thickness setting
+- Consistent thickness across CPU, Disk Read/Write, and Network Send/Receive curves
+
+### 📐 **Files Modified**
+- **`src/sysmon.py`**: Added line thickness system (~120 lines)
+- **`docs/CHANGELOG.md`**: This changelog entry
+
+---
+
+## 2026-01-01 1200 CST - GitHub Version Checking Integration [ v0.2.19 ]
+
+### 🆕 **NEW FEATURE: Complete GitHub Version Checking System**
+- **Menu Integration**: Added "Check for Updates (F5)" to Help menu
+- **Automatic Checking**: Added "Auto-check for Updates" toggle to Config menu
+- **GitHub API Integration**: Real-time version checking against GitHub releases
+- **Version Comparison**: Semantic versioning with pre-release support (a, b, rc)
+- **Update Notifications**: Rich dialog with version comparison and release notes
+- **Skip Functionality**: "Skip This Version" with persistent skip list
+- **Background Processing**: Non-blocking startup checks with threading
+- **User Preferences**: 4 new preference keys for update management
+- **Error Handling**: Comprehensive network and API error management
+- **Security Design**: No automatic downloads, user control maintained
+
+### 📝 **Implementation Details**
+- **Standalone Module**: Created reusable `github_version_checker.py` (350 lines)
+- **API Endpoint**: GitHub Releases API with 15-second timeout
+- **Response Time**: 0.3-0.5 seconds average API response
+- **Cross-Platform**: Uses only Python standard library + PyQt5
+- **XDG Compliance**: Update preferences stored in existing preferences.json
+
+### 🎯 **User Experience**
+- **F5 Shortcut**: Quick access to manual update checking
+- **Clear Status**: "You have the latest version" vs. update available messages
+- **Download Options**: "Download Now", "Skip This Version", "Remind Me Later"
+- **Theme Support**: Update dialogs follow system dark/light theme
+- **Configuration**: 7-day default check interval, user adjustable
+- **Background Smart**: Only notifies when actual update is available
+
+### 🔧 **Technical Features**
+- **Semantic Versioning**: Proper comparison (0.2.18a < 0.2.18 < 0.2.19)
+- **Prerelease Support**: Handles alpha, beta, release candidate versions
+- **Rate Limiting**: Respects GitHub's 60 requests/hour API limit
+- **Error Recovery**: Graceful degradation when GitHub is unavailable
+- **Persistent State**: Skip versions stored across application restarts
+
+### 📚 **Documentation & Testing**
+- **Complete API Documentation**: `github_version_checker_documentation.md`
+- **Integration Examples**: CLI, GUI, and web application examples
+- **Comprehensive Testing**: 100% functionality coverage with validation scripts
+- **Cross-Repository Testing**: Validated with SysMon, VSCode, and error scenarios
+
+### 🛡️ **Security & Privacy**
+- **No Auto-Downloads**: Only opens GitHub releases page in browser
+- **HTTPS Only**: All API communication uses secure connections
+- **User Control**: Every action requires explicit user approval
+- **No Personal Data**: Only repository and version information transmitted
+- **Input Validation**: All API responses and user inputs validated
+
+---
+
+## 2025-12-31 1200 CST - Enhanced Smoothing Control Feedback [ v0.2.18d ]
+
+### ✨ **ENHANCEMENT: User Feedback for Smoothing Limits**
+- **Issue**: No visual feedback when pressing '-' key at minimum smoothing level (1-point)
+- **Fix**: Added limit detection feedback for both minimum and maximum smoothing boundaries
+- **Behavior**: Window title now displays clear messages when limits are reached:
+  - Minimum: "Smoothing: Already at MINIMUM (1-point)"
+  - Maximum: "Smoothing: Already at MAXIMUM (20-point / 4.00s)"
+- **Duration**: Feedback displays for 2 seconds (same as normal smoothing status)
+
+### 📝 **Implementation Details**
+- Modified `decrease_smoothing()` to show feedback when at minimum (src/sysmon.py:2394)
+- Modified `increase_smoothing()` to show feedback when at maximum (src/sysmon.py:2384)
+- Added new `show_smoothing_limit_status()` method (src/sysmon.py:2420)
+- Uses same UI pattern as existing `show_smoothing_status()` for consistency
+
+### 🎯 **User Benefits**
+- Clear confirmation that key press was registered but limit prevents further adjustment
+- Prevents confusion about whether keyboard input is working
+- Consistent feedback mechanism matching existing smoothing status messages
+- Improved user experience with responsive visual feedback
+
+---
+
+## 2025-12-31 1125 CST - Full Application Theme Support  [ v0.2.18c ]
+
+### 🎨 **NEW FEATURE: Manual Theme Selection with Full UI Theming**
+- **Menu Option**: Config → Theme... opens theme selection dialog
+- **Theme Modes**: Auto (system detection), Light, and Dark
+- **Full Coverage**: Themes now apply to entire application (windows, menus, dialogs, graphs, buttons)
+- **Persistence**: Theme preference saved to preferences.json
+
+### 📝 **Implementation Details**
+- Added `theme_mode` setting: 'auto', 'light', or 'dark' (src/sysmon.py:1564)
+- Created `apply_application_theme()` method with complete QPalette configuration (src/sysmon.py:1782-1833)
+- Dark theme: Dark gray backgrounds (RGB 53,53,53), light text (200,200,200)
+- Light theme: Light gray backgrounds (RGB 240,240,240), dark text (0,0,0)
+- Updated `is_dark_theme()` to respect manual theme override (src/sysmon.py:1768-1780)
+- Modified `setup_pyqtgraph_theme()` and `apply_system_theme_to_plots()` to use centralized theme detection
+- Theme dialog with radio button selection (src/sysmon.py:2918-2989)
+
+### 🎯 **User Benefits**
+- Force dark mode for night-time use regardless of system theme
+- Force light mode for daytime readability in bright environments
+- Auto mode follows system preferences seamlessly
+- Consistent theming across all UI elements (not just graphs)
+- Professional appearance with proper color palettes for buttons, menus, tooltips, highlights
+
+### 🔧 **Technical Details**
+- QPalette controls: Window, WindowText, Base, AlternateBase, ToolTip, Text, Button, ButtonText, Link, Highlight
+- Disabled state colors properly configured for both themes
+- PyQtGraph backgrounds and foregrounds synchronized with Qt palette
+- Theme applies to all dialogs (Process, Disk, Network, About, Help, etc.)
+
+---
+
+## 2025-12-31 1030 CST - Cross-Platform Markdown Rendering Fix  [ v0.2.18a ]
+
+### 🐛 **BUGFIX: Inconsistent Help Menu Text Rendering Across Platforms**
+- **Issue**: Help menu documents (ChangeLog, Users Guide, Keyboard Shortcuts) rendered with disproportionate text sizes on Windows 11
+- **Symptom**: Body text appeared extremely small while headers remained normal size on Windows; Linux LMDE showed proper proportions
+- **Root Cause**: CSS used pixel-based font sizing (`14px`) which doesn't scale consistently with different platform DPI settings
+- **Fix**: Changed base font size from `14px` to `10pt` in `render_markdown_to_html()` method (src/sysmon.py:1831)
+- **Impact**: All Help menu documents now render proportionally on both Windows and Linux platforms
+
+### 📝 **Technical Details**
+- **Point units (`pt`)** are device-independent and Qt handles DPI scaling automatically
+- **Pixel units (`px`)** are absolute and don't account for screen DPI differences
+- Windows 11 high-DPI scaling caused `14px` to render too small
+- Headers used relative `em` units, so they scaled proportionally to each other but not to tiny body text
+- Solution ensures consistent rendering across platforms while maintaining readability
+
+### 🎯 **User Benefits**
+- Consistent, readable Help documentation on all platforms
+- No more squinting at tiny text on high-DPI Windows displays
+- Professional appearance maintained across Windows, Linux, and macOS
+
+---
+
+## 2025-12-31 2100 CST - Real-Time Graph Smoothing  [ v0.2.18 ]
+
+### 📊 **NEW FEATURE: Keyboard-Controlled Graph Smoothing**
+- **Shortcut Keys**: Press **'+'** to increase smoothing, **'-'** to decrease
+- **Smoothing Range**: 1 (no smoothing/raw data) to 20 points (heavy smoothing)
+- **Visual Feedback**: Window title shows current smoothing level for 2 seconds
+- **Persistence**: Smoothing preference saved to preferences.json
+- **Menu Option**: Config → Smoothing Level... for GUI access
+
+### 📝 **Implementation Details**
+- Added simple moving average (SMA) filter to all 5 data series (src/sysmon.py:2258-2280)
+- Created `apply_smoothing()` method for filtering (src/sysmon.py:2265-2280)
+- Added keyboard handlers for +/- keys in `keyPressEvent()` (src/sysmon.py:2423-2426)
+- Created `increase_smoothing()`, `decrease_smoothing()`, `show_smoothing_status()` methods (src/sysmon.py:2316-2344)
+- Status display via temporary window title change (2 seconds)
+- Optional Config menu item: "Smoothing Level..." (src/sysmon.py:2122-2125)
+- Method `change_smoothing_level()` for dialog-based adjustment (src/sysmon.py:2842-2852)
+
+### 🎯 **Use Cases**
+- Reduce noise on busy systems (CPU spikes, disk bursts, network fluctuations)
+- Smooth out high-frequency fluctuations for clearer trend visualization
+- Trade-off: More smoothing = clearer trends but slower response to changes
+- Quick adjustment without leaving main window or opening dialogs
+- Example smoothing levels:
+  - 1 point = Raw data (default, no smoothing)
+  - 5 points = Light smoothing (~1.0s window at 200ms update rate)
+  - 10 points = Medium smoothing (~2.0s window)
+  - 20 points = Heavy smoothing (~4.0s window)
+
+### 🔧 **Technical Details**
+- Algorithm: Simple Moving Average (SMA)
+- Window size: User-adjustable 1-20 data points
+- Applied to: CPU%, Disk Read/Write MB/s, Network Sent/Received MB/s
+- Performance: Negligible overhead (~O(n*w) where n≈100-600, w≤20)
+- Edge handling: Graceful degradation at data start (uses available points)
+
+---
+
+## 2025-12-31 2000 CST - Quit Keyboard Shortcut  [ v0.2.17c ]
+
+### ⌨️ **NEW KEYBOARD SHORTCUT: Q Key to Quit**
+- **Shortcut Key**: Press **'Q'** to quit the application
+- **Action**: Closes the SysMon window and exits the application
+- **Integration**: Follows same pattern as existing keyboard shortcuts ('M' for minimize, 'T' for transparency)
+
+### 📝 **Implementation Details**
+- Added `Qt.Key_Q` handler in `keyPressEvent()` method (src/sysmon.py:2387-2388)
+- Calls `self.close()` to trigger clean shutdown
+- No additional state tracking required
+
+### 🎯 **Use Cases**
+- Quick exit without mouse interaction
+- Keyboard-driven workflow efficiency
+- Consistent with standard 'Q' quit convention in many applications
+
+---
+
+## 2025-12-31 1800 CST - Issue Tracker Menu Item  [ v0.2.17b ]
+
+### 🔗 **NEW HELP MENU ITEM: Issue Tracker**
+- **Menu Location**: Help → Issue Tracker (positioned above About)
+- **Action**: Opens GitHub issues page in default web browser
+- **URL**: https://github.com/juren53/system-monitor/issues
+- **Keyboard Shortcut**: Alt+I (via menu accelerator)
+
+### 📝 **Implementation Details**
+- Added `webbrowser` module import (src/sysmon.py:18)
+- Created Issue Tracker menu action (src/sysmon.py:2158-2161)
+- Implemented `show_issue_tracker()` method (src/sysmon.py:3417-3428)
+- Error handling with fallback message box showing URL
+
+### 🎯 **User Benefits**
+- Quick access to report bugs or suggest features
+- Direct link to GitHub issue tracker from Help menu
+- Graceful fallback if browser fails to open
+
+---
+
+## 2025-12-30 1400 CST - GitHub Fallback for Help Documents  [ v0.2.16a ]
+
+### 🐛 **BUGFIX: Pygments Style Error**
+- **Issue**: `ClassNotFound: Could not find style module 'pygments.styles.github'`
+- **Root Cause**: Non-existent Pygments styles 'github' and 'github-dark' were used
+- **Fix**: Changed to standard Pygments styles:
+  - Dark theme: 'monokai' (instead of 'github-dark')
+  - Light theme: 'default' (instead of 'github')
+- **Location**: `render_markdown_to_html()` method (line 1814)
+- **Impact**: Help menu markdown rendering now works correctly
+
+### 🌐 **Automatic GitHub Fallback for Help Menu**
+- **Feature**: Help documents now automatically load from GitHub if local files are missing
+- **Applies to**:
+  - ChangeLog (docs/CHANGELOG.md)
+  - Users Guide (docs/users-guide.md)
+  - Keyboard Shortcuts (docs/keyboard-shortcuts.md)
+- **User Experience**: Seamless failover with notification when GitHub is used
+- **Benefits**: Always shows latest documentation even if local files damaged/moved
+
+### 📝 **Implementation Details**
+- Added `urllib.request` and `urllib.error` imports for HTTP requests
+- Created `load_document_with_fallback()` helper method:
+  - Tries local file first (fast, no network needed)
+  - Falls back to GitHub raw URL if local file fails
+  - Returns clear error if both methods fail
+- GitHub URLs point to main branch raw content:
+  - `https://raw.githubusercontent.com/juren53/system-monitor/main/docs/...`
+- Appends source notification when loaded from GitHub
+- 10-second timeout for GitHub requests
+
+### 🎯 **Use Cases**
+- Standalone executables without bundled documentation
+- User accidentally deletes/moves docs folder
+- Corrupted local files
+- Always see latest docs from repository
+
+---
+
+## 2025-12-30 0700 CST - Down Arrow Minimize Shortcut  [ v0.2.17 ]
+
+### ⌨️ **NEW KEYBOARD SHORTCUT: Down Arrow Minimize**
+- **Shortcut Key**: Press **Down Arrow** to minimize window
+- **Alternate to 'M'**: Provides second keyboard option for minimize action
+- **Same Behavior**: Identical functionality to existing 'm' key shortcut
+
+### 📝 **Implementation Details**
+- Added `Qt.Key_Down` handler in `keyPressEvent()` method (src/sysmon.py:2374-2375)
+- Calls existing `minimize_window()` method
+- No state changes or new methods required
+
+### 🎯 **Use Cases**
+- Quick minimize using arrow key (more intuitive for some users)
+- Complements existing left/right arrow window positioning
+- Consistent keyboard navigation experience
+
+---
+
+## 2025-12-30 0000 CST - Transparency Toggle Keyboard Shortcut  [ v0.2.16 ]
+
+### ⌨️ **NEW KEYBOARD SHORTCUT: Transparency Toggle**
+- **Shortcut Key**: Press **'t'** to toggle window transparency
+- **Toggle States**:
+  - OFF: 100% opaque (fully visible)
+  - ON: 50% transparent (see-through mode)
+- **Integration**: Works seamlessly with existing transparency settings
+- **Pattern**: Follows same implementation as 'm' minimize shortcut
+
+### 📝 **Implementation Details**
+- Added `_transparency_toggled` state flag to track toggle status
+- Added `Qt.Key_T` handler in `keyPressEvent()` method
+- Created `toggle_transparency()` method with error handling
+- Uses existing `set_window_transparency()` infrastructure
+
+### 🎯 **Use Cases**
+- Quick transparency toggle while monitoring system
+- No need to open transparency dialog for common 50% setting
+- Instant visual feedback for window transparency state
+
+---
+
+## 2025-12-25 1745 CST - Simplify Data Collection for Performance  [ v0.2.16 ]
+
+### ⚡ **Performance Optimization: Minimal Data Collection**
+- **Issue**: Process data collection still slow despite removing tooltips
+- **Root Cause**: Collecting exe, cwd, username, status, threads requires filesystem/system lookups
+- **Solution**: Collect only cmdline (fast), remove expensive process details
+- **Impact**: Significant performance improvement, back to pre-enhancement levels
+
+### 📊 **What's Changed**
+- **Kept**: Command line display (first 70 chars) - most useful info
+- **Removed**: exe path, working directory, username, status, thread count collection
+- **Performance**: ~80% reduction in process data collection overhead
+
+### 💻 **Technical Details**
+- Removed expensive psutil calls: proc.exe(), proc.cwd(), proc.username(), proc.status(), proc.num_threads()
+- Kept lightweight psutil call: proc.cmdline() (reads from /proc on Linux, fast)
+- Lines removed: ~90 lines (30 per worker × 3 workers)
+- All three workers simplified: ProcessWorker, DiskIOWorker, NetworkWorker
+
+### 🎯 **User Impact**
+- Fast table updates and scrolling restored
+- Command line arguments still visible (e.g., "chrome.exe --type=renderer...")
+- Wider columns retained (400px) for better visibility
+- Performance now comparable to v0.2.15
+
+### 📝 **What's Still Collected**
+- PID, process name, command line with arguments
+- Metric-specific data (CPU%, memory%, disk rates, network connections)
+- Enough info to identify and distinguish processes
+
+---
+
+## 2025-12-25 1730 CST - Remove Tooltips for Performance  [ v0.2.16 ]
+
+### ⚡ **Performance Fix: Tooltips Removed**
+- **Issue**: Rich tooltips caused significant performance degradation
+- **Solution**: Removed all tooltip code from drill-down dialogs
+- **Impact**: Dramatic performance improvement in table rendering and scrolling
+- **Trade-off**: Command line still visible (first 70 chars), but no hover details
+
+### 📊 **What's Still Working**
+- Full command line display in Process Name column (first 70 chars with ellipsis)
+- Wider columns (400px) show more information upfront
+- All process data collection intact (exe, cwd, username, status, threads)
+- Data available for future features (e.g., Details button, export, etc.)
+
+### 💻 **Technical Details**
+- Removed tooltip generation code from all three dialogs
+- Lines removed: ~54 lines (18 per dialog × 3 dialogs)
+- No change to data collection - only display logic affected
+- Qt tooltip rendering was bottleneck
+
+### 🎯 **User Impact**
+- Much faster table updates and scrolling
+- Process Name column still shows command line with arguments
+- Most important info visible without hovering
+- Performance restored to pre-tooltip levels
+
+---
+
 ## v0.2.16 - 2025-12-25 1700 CST - Enhanced Process Monitoring & Configuration Features
 
 ### 🎉 **Release Summary**

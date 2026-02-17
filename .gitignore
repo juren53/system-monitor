@@ -24,13 +24,16 @@ wheels/
 venv/
 env/
 ENV/
+.venv/
+myenv/
 sysmon_build_env/
 
-# IDE and Editor files
+# IDE, Editor, and AI assistants
 .vscode/
 .idea/
 *.swp
 *.swo
+.claude/settings.local.json
 *~
 .DS_Store
 Thumbs.db

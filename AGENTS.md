@@ -1,6 +1,6 @@
-# WARP.md
+# AGENTS.md
 
-This file provides guidance to WARP (warp.dev) when working with code in this repository.
+This file provides guidance to AI coding assistants when working with code in this repository.
 
 ## Project Overview
 
@@ -135,6 +135,9 @@ All magic numbers are centralized at the top of `src/sysmon.py`:
 - **Change update frequency**: Modify `ANIMATION_INTERVAL` (in milliseconds)
 - **Modify smoothing**: Adjust `DEFAULT_SMOOTH_WINDOW` or `MAX_SMOOTH_WINDOW`
 - **Change popup dimensions**: Modify `POPUP_FIG_WIDTH_*` and `POPUP_FIG_HEIGHT` constants
+
+### Releasing New Versions
+When tagging a new version, you MUST also create a **GitHub Release** (not just a git tag). The in-app "Check for Updates" feature uses the GitHub `/releases/latest` API endpoint, which only sees GitHub Releases — plain git tags are invisible to it. Use `gh release create` after pushing the tag.
 
 ### Testing Approach
 No formal test framework; use manual test scripts in `tests/` directory. Run the application and verify:

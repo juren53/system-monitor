@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SysMon is a cross-platform real-time system monitor built with PyQt5 and PyQtGraph. It displays CPU, Disk I/O, and Network activity with high-performance scrolling graphs (75-150x faster than matplotlib). Current version: v0.2.16.
+SysMon is a cross-platform real-time system monitor built with PyQt5 and PyQtGraph. It displays CPU, Disk I/O, and Network activity with high-performance scrolling graphs (75-150x faster than matplotlib). Current version: v0.4.2.
 
 ## Development Commands
 
@@ -66,7 +66,7 @@ Format examples:
 ### Version Numbering
 - Production releases: `v0.X.Y` (e.g., v0.2.9)
 - Point releases/patches: `v0.X.Ya`, `v0.X.Yb` (e.g., v0.2.9a)
-- Update version in: README.md, src/sysmon.py (VERSION, RELEASE_DATE, RELEASE_TIME, BUILD_DATE, BUILD_TIME), About dialog
+- Update version in: README.md, src/sysmon.py (VERSION, RELEASE_DATE, RELEASE_TIME, BUILD_DATE, BUILD_TIME), About dialog, CLAUDE.md
 
 ## Architecture
 
@@ -107,7 +107,7 @@ The entire application is contained in `src/sysmon.py` (~3300 lines). This is in
 - Same real-time controls as CPU/Disk dialogs
 
 **ProcessInfoDialog (line 364)** - Static process snapshot (legacy)
-- Shows top 10 processes for a specific metric at time of double-click
+- Shows top 10 processes for a specific metric at time of middle-click
 - Monospace font for alignment
 
 ### Data Flow
@@ -153,9 +153,14 @@ Auto-detects system theme (light/dark) via QPalette brightness analysis (src/sys
 - Window icon, tray icon (if implemented), and desktop file icon
 - PyInstaller bundles icons via SysMon.spec
 
+### Mouse Actions
+
+- **Left-click** anywhere on the window to minimize to taskbar
+- **Middle-click** (scroll wheel click) on any graph opens real-time process monitor dialogs
+
 ### Process Analysis
 
-Double-click on any graph opens real-time process monitor dialogs:
+Middle-click on any graph opens real-time process monitor dialogs:
 - **CPU graph** → RealTimeProcessDialog showing top CPU consumers with live updates
 - **Disk graph** → RealTimeDiskDialog showing read/write MB/s rates
 - **Network graph** → RealTimeNetworkDialog showing connection counts
@@ -174,6 +179,12 @@ All dialogs feature:
 - Adjustable update intervals (1-60 seconds, default 3s)
 - Process filtering by name or PID
 - Pause/Resume controls for snapshot analysis
+
+**Keyboard-controlled graph smoothing** (v0.2.18):
+- +/- keys adjust moving average filter (1-20 points)
+- Real-time smoothing of all graphs with visual feedback
+- Reduces noise on busy systems, clarifies trends
+- Persistent preference saved across sessions
 
 **Live memory display**:
 - RAM and Swap usage displayed in real-time

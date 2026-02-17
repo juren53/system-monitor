@@ -3,7 +3,18 @@
 ## Window Positioning Navigation
 **← Left Arrow**  : Move window to left side of current screen (preserves window size)
 **→ Right Arrow** : Move window to right side of current screen (preserves window size)
-**m Key**         : Minimize application window to taskbar
+**↓ Down Arrow**  : Minimize application window to taskbar
+**M Key**         : Minimize application window to taskbar
+**T Key**         : Toggle window transparency on/off
+**Q Key**         : Quit application (close window and exit)
+
+## Mouse Actions
+**Left-Click**    : Minimize application window to taskbar (click anywhere on window)
+**Middle-Click**  : Open real-time drill-down dialog (click on any graph)
+
+## Graph Control
+**+ Key**         : Increase smoothing (reduce noise, adds slight lag)
+**- Key**         : Decrease smoothing (more responsive, shows more noise)
 
 ## Existing Keyboard Shortcuts
 
