@@ -44,18 +44,27 @@ SysMon is a real-time system monitoring application that provides live visualiza
 
 ### Installation
 
+**Linux / macOS / Git Bash:**
 ```bash
 # Recommended: auto-setup and launch
 ./run.sh
+```
 
-# Or manual setup
+**Windows (PowerShell):**
+```powershell
+# Recommended: auto-setup and launch
+.\run.ps1
+```
+
+Both launchers automatically create a virtual environment, install all dependencies from `requirements.txt`, and launch SysMon. If PowerShell blocks `run.ps1`, run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` once first.
+
+**Manual setup (any platform):**
+```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python3 src/sysmon.py
 ```
-
-`run.sh` automatically creates a virtual environment, installs all dependencies from `requirements.txt`, and launches SysMon. Works on Linux, macOS, and Windows (Git Bash).
 
 ### First Launch
 
@@ -308,7 +317,7 @@ All configuration options are detailed in [Configuration Menu](#7-configuration-
 
 **Problem**: SysMon fails to launch
 **Solutions**:
-1. Use `./run.sh` which handles venv and dependency setup automatically
+1. Use `./run.sh` (Linux/macOS/Git Bash) or `.\run.ps1` (Windows PowerShell) — both handle venv and dependency setup automatically
 2. Check Python version: Requires Python 3.7+
 3. Install dependencies manually: `pip install -r requirements.txt`
 4. Run from correct directory: `python3 src/sysmon.py`
