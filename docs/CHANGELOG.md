@@ -1,5 +1,24 @@
 # Changelog - sysmon.py
 
+## 2026-02-17 CST - Add run.ps1 PowerShell Launcher [ v0.4.3 ]
+
+### New: run.ps1 Windows Launcher
+- **`run.ps1`**: PowerShell equivalent of `run.sh` for native Windows users
+- Auto-creates venv, installs dependencies if `requirements.txt` has changed, and launches SysMon
+- Marker-based dependency tracking — only reinstalls when `requirements.txt` changes
+- Passes through command-line arguments (e.g. `.\run.ps1 -s 5 -t 20`)
+
+### Documentation Updated
+- **`README.md`**: Quick Start section now has separate instructions for Linux/macOS/Git Bash and Windows PowerShell
+- **`CLAUDE.md`**: Development Commands updated to document `run.ps1`
+
+### Files Modified
+- **`run.ps1`**: New Windows PowerShell launcher
+- **`README.md`**: Updated Quick Start section
+- **`CLAUDE.md`**: Updated Running the Application section
+
+---
+
 ## 2026-02-17 1820 CST - pyqt-app-info Integration & run.sh Launcher [ v0.4.3 ]
 
 ### New: pyqt-app-info About Dialog
