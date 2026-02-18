@@ -13,11 +13,16 @@
 - **`CLAUDE.md`**: Development Commands updated to document `run.ps1`
 - **`docs/users-guide.md`**: Quick Start and Troubleshooting sections updated to include `run.ps1`
 
+### Version Bump
+- Version updated to v0.4.4 in `src/sysmon/constants.py`, `README.md`, `CLAUDE.md`, `docs/users-guide.md`
+- Confirmed: v0.4.4 displays correctly in the About dialog
+
 ### Files Modified
 - **`run.ps1`**: New Windows PowerShell launcher
-- **`README.md`**: Updated Quick Start section
-- **`CLAUDE.md`**: Updated Running the Application section
-- **`docs/users-guide.md`**: Updated Quick Start and Troubleshooting sections
+- **`README.md`**: Updated Quick Start section and version
+- **`CLAUDE.md`**: Updated Running the Application section and version
+- **`docs/users-guide.md`**: Updated Quick Start, Troubleshooting sections, and version
+- **`src/sysmon/constants.py`**: Version bumped to 0.4.4
 
 ---
 
