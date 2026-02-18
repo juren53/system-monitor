@@ -26,41 +26,28 @@ Comprehensive system monitoring application with real-time graphs for CPU, Disk 
 - **GitHub version checking** with automatic and manual update notifications
 
 ## Installation
-### Requirements
-- Python 3.7+
-- PyQt5
-- PyQtGraph
-- psutil
-- (matplotlib no longer required - replaced with PyQtGraph)
 
-### Install Dependencies
+### Quick Start (Recommended)
 ```bash
-pip install PyQt5 pyqtgraph psutil
+git clone https://github.com/juren53/system-monitor.git
+cd system-monitor
+./run.sh
 ```
+`run.sh` automatically creates a virtual environment, installs all dependencies, and launches SysMon. Works on Linux, macOS, and Windows (Git Bash).
 
-### Alternative: Using Virtual Environment
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install PyQt5 pyqtgraph psutil
-```
-
-### Using requirements.txt
+### Manual Setup
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### Run Application
-```bash
-# With virtual environment
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-python3 src/sysmon.py
-
-# Or directly (if dependencies installed globally)
 python3 src/sysmon.py
 ```
+
+### Requirements
+- Python 3.7+
+- PyQt5, PyQtGraph, psutil, numpy, markdown, pygments
+- pyqt-app-info (app identity & environment detection)
+- All dependencies listed in `requirements.txt`
 
 ## Usage
 ### Command Line Options
