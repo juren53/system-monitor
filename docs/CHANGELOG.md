@@ -1,6 +1,6 @@
 # Changelog - sysmon.py
 
-## 2026-02-17 CST - Add run.ps1 PowerShell Launcher [ v0.4.3 ]
+## 2026-02-17 CST - Add run.ps1 PowerShell Launcher [ v0.4.4 ]
 
 ### New: run.ps1 Windows Launcher
 - **`run.ps1`**: PowerShell equivalent of `run.sh` for native Windows users
@@ -11,11 +11,13 @@
 ### Documentation Updated
 - **`README.md`**: Quick Start section now has separate instructions for Linux/macOS/Git Bash and Windows PowerShell
 - **`CLAUDE.md`**: Development Commands updated to document `run.ps1`
+- **`docs/users-guide.md`**: Quick Start and Troubleshooting sections updated to include `run.ps1`
 
 ### Files Modified
 - **`run.ps1`**: New Windows PowerShell launcher
 - **`README.md`**: Updated Quick Start section
 - **`CLAUDE.md`**: Updated Running the Application section
+- **`docs/users-guide.md`**: Updated Quick Start and Troubleshooting sections
 
 ---
 
