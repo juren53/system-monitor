@@ -8,7 +8,7 @@ import platform
 import datetime
 
 # Version Information
-VERSION = "0.4.3"
+VERSION = "0.4.4"
 RELEASE_DATE = "2026-02-17"
 RELEASE_TIME = "1820 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
