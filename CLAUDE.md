@@ -10,9 +10,13 @@ SysMon is a cross-platform real-time system monitor built with PyQt5 and PyQtGra
 
 ### Running the Application
 ```bash
-# Recommended: use run.sh (auto-creates venv, installs deps, launches app)
+# Recommended (Linux/macOS/Git Bash): auto-creates venv, installs deps, launches app
 ./run.sh
 ./run.sh -s 5 -t 20  # with command-line options
+
+# Recommended (Windows PowerShell): equivalent launcher for Windows
+.\run.ps1
+.\run.ps1 -s 5 -t 20  # with command-line options
 
 # Manual setup
 python3 -m venv venv
