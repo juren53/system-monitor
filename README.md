@@ -28,12 +28,22 @@ Comprehensive system monitoring application with real-time graphs for CPU, Disk 
 ## Installation
 
 ### Quick Start (Recommended)
+
+**Linux / macOS / Git Bash:**
 ```bash
 git clone https://github.com/juren53/system-monitor.git
 cd system-monitor
 ./run.sh
 ```
-`run.sh` automatically creates a virtual environment, installs all dependencies, and launches SysMon. Works on Linux, macOS, and Windows (Git Bash).
+`run.sh` automatically creates a virtual environment, installs all dependencies, and launches SysMon.
+
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/juren53/system-monitor.git
+cd system-monitor
+.\run.ps1
+```
+`run.ps1` does the same — auto-creates a venv, installs dependencies, and launches SysMon. If you see an execution policy error, run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` once first.
 
 ### Manual Setup
 ```bash
