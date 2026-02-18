@@ -10,13 +10,14 @@ SysMon is a cross-platform real-time system monitor built with PyQt5 and PyQtGra
 
 ### Running the Application
 ```bash
-# With virtual environment (recommended)
+# Recommended: use run.sh (auto-creates venv, installs deps, launches app)
+./run.sh
+./run.sh -s 5 -t 20  # with command-line options
+
+# Manual setup
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python3 src/sysmon.py
-
-# Direct run (if dependencies installed globally)
 python3 src/sysmon.py
 
 # Command-line options
@@ -41,7 +42,7 @@ pyinstaller SysMon.spec
 ### Installing Desktop Entry (Linux)
 ```bash
 # Install desktop file
-bash run-sysmon.sh
+bash install-desktop.sh
 
 # Force icon refresh
 bash force-icon-refresh.sh
@@ -70,8 +71,8 @@ Format examples:
 
 ## Architecture
 
-### Single-File Application
-The entire application is contained in `src/sysmon.py` (~3300 lines). This is intentional - do not split into modules without explicit approval.
+### Modular Package Architecture
+The application entry point is `src/sysmon.py` (~266 lines) which composes `SystemMonitor` from mixin modules in `src/sysmon/`. Refactored from a single-file monolith in v0.4.0.
 
 ### Key Classes
 
@@ -204,6 +205,7 @@ Core (from requirements.txt):
 - numpy >= 1.25.0 (array operations for PyQtGraph)
 - markdown >= 3.4.0 (documentation rendering)
 - pygments >= 2.15.0 (syntax highlighting for markdown)
+- pyqt-app-info (app identity & environment detection for About dialog — core only, no `[qt]` extra)
 
 ## Directory Structure
 
@@ -219,7 +221,7 @@ system-monitor/
 ├── notes/            # Development notes
 ├── SysMon.spec       # PyInstaller build specification
 ├── requirements.txt  # Python dependencies
-└── run-sysmon.sh     # Desktop integration script (Linux)
+└── run.sh            # Cross-platform venv launcher (auto-setup & run)
 ```
 
 ## Common Issues
