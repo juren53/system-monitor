@@ -45,12 +45,17 @@ SysMon is a real-time system monitoring application that provides live visualiza
 ### Installation
 
 ```bash
-# Install required dependencies
-pip install PyQt5 pyqtgraph psutil
+# Recommended: auto-setup and launch
+./run.sh
 
-# Run SysMon
+# Or manual setup
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
 python3 src/sysmon.py
 ```
+
+`run.sh` automatically creates a virtual environment, installs all dependencies from `requirements.txt`, and launches SysMon. Works on Linux, macOS, and Windows (Git Bash).
 
 ### First Launch
 
@@ -261,7 +266,7 @@ All configuration options are detailed in [Configuration Menu](#7-configuration-
 |------------|----------|-------------|
 | Users Guide | Documentation | Opens this comprehensive user guide |
 | ChangeLog | Version History | Shows development history and changes |
-| About | Application Info | Displays version, build info, and system details |
+| About | Application Info | Displays version, features, execution environment (via pyqt-app-info) |
 
 ---
 
@@ -303,9 +308,10 @@ All configuration options are detailed in [Configuration Menu](#7-configuration-
 
 **Problem**: SysMon fails to launch
 **Solutions**:
-1. Check Python version: Requires Python 3.7+
-2. Install dependencies: `pip install PyQt5 pyqtgraph psutil`
-3. Run from correct directory: `python3 src/sysmon.py`
+1. Use `./run.sh` which handles venv and dependency setup automatically
+2. Check Python version: Requires Python 3.7+
+3. Install dependencies manually: `pip install -r requirements.txt`
+4. Run from correct directory: `python3 src/sysmon.py`
 
 #### Graphs Not Updating
 
@@ -352,7 +358,7 @@ All configuration options are detailed in [Configuration Menu](#7-configuration-
 
 - **This Guide**: Comprehensive user documentation you're reading now
 - **ChangeLog**: Detailed version history in `docs/CHANGELOG.md`
-- **About Dialog**: Version and system information from Help menu
+- **About Dialog**: Version, features, and execution environment details from Help menu (powered by pyqt-app-info)
 
 #### Support Information
 
