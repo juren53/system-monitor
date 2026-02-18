@@ -1,7 +1,7 @@
 # SysMon Users Guide
 
-**Version:** v0.4.2 (Production Release)
-**Updated:** 2026-02-15
+**Version:** v0.4.3 (Production Release)
+**Updated:** 2026-02-17
 
 ## Table of Contents
 

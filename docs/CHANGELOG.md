@@ -1,6 +1,6 @@
 # Changelog - sysmon.py
 
-## 2026-02-17 2213 CST - pyqt-app-info Integration & run.sh Launcher [ v0.4.2 ]
+## 2026-02-17 1820 CST - pyqt-app-info Integration & run.sh Launcher [ v0.4.3 ]
 
 ### New: pyqt-app-info About Dialog
 - **About dialog** now uses [pyqt-app-info](https://github.com/juren53/pyqt-app-info) core module (`AppIdentity`, `gather_info`) for automatic environment detection
