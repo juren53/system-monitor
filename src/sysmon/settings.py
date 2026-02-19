@@ -37,7 +37,8 @@ class SettingsMixin:
 
         # Update all deques with new maxlen
         for data_list in [self.cpu_data, self.disk_read_data, self.disk_write_data,
-                         self.net_sent_data, self.net_recv_data, self.time_data]:
+                         self.net_sent_data, self.net_recv_data, self.time_data,
+                         self.ram_percent_data, self.swap_percent_data]:
             if len(data_list) > self.max_points:
                 # Trim from the left
                 for _ in range(len(data_list) - self.max_points):
@@ -45,6 +46,7 @@ class SettingsMixin:
 
         # Update x-axis range
         self.cpu_plot.setXRange(-self.time_window, 0)
+        self.memory_plot.setXRange(-self.time_window, 0)
         self.disk_plot.setXRange(-self.time_window, 0)
         self.net_plot.setXRange(-self.time_window, 0)
 
@@ -113,8 +115,9 @@ class SettingsMixin:
         # Only update if state actually changed to avoid recursion
         if new_invert_state != self.invert_axis:
             self.invert_axis = new_invert_state
-            # Apply the same state to all three graphs
+            # Apply the same state to all four graphs
             self.cpu_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
+            self.memory_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
             self.disk_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
             self.net_plot.getPlotItem().getViewBox().invertX(self.invert_axis)
             # Save the preference
@@ -155,13 +158,16 @@ class SettingsMixin:
                 import csv
                 with open(file_path, 'w', newline='') as csvfile:
                     writer = csv.writer(csvfile)
-                    writer.writerow(['Time', 'CPU %', 'Disk Read (MB/s)', 'Disk Write (MB/s)',
+                    writer.writerow(['Time', 'CPU %', 'Memory RAM %', 'Memory Swap %',
+                                   'Disk Read (MB/s)', 'Disk Write (MB/s)',
                                    'Network Sent (MB/s)', 'Network Received (MB/s)'])
 
                     for i, time_val in enumerate(self.time_data):
                         writer.writerow([
                             time_val,
                             self.cpu_data[i] if i < len(self.cpu_data) else '',
+                            self.ram_percent_data[i] if i < len(self.ram_percent_data) else '',
+                            self.swap_percent_data[i] if i < len(self.swap_percent_data) else '',
                             self.disk_read_data[i] if i < len(self.disk_read_data) else '',
                             self.disk_write_data[i] if i < len(self.disk_write_data) else '',
                             self.net_sent_data[i] if i < len(self.net_sent_data) else '',
@@ -214,6 +220,8 @@ class SettingsMixin:
             self.net_sent_data.clear()
             self.net_recv_data.clear()
             self.time_data.clear()
+            self.ram_percent_data.clear()
+            self.swap_percent_data.clear()
             self.update_plots()
 
     def reset_settings(self):
@@ -258,6 +266,10 @@ class SettingsMixin:
     def toggle_network_plot(self):
         """Toggle Network plot visibility"""
         self.net_plot.setVisible(self.show_network_action.isChecked())
+
+    def toggle_memory_plot(self):
+        """Toggle Memory plot visibility"""
+        self.memory_plot.setVisible(self.show_memory_action.isChecked())
 
     # Config Menu Methods
     def change_update_interval(self):
@@ -409,6 +421,8 @@ class SettingsMixin:
 
         graph_elements = [
             "CPU Usage Curve",
+            "Memory RAM Curve",
+            "Memory Swap Curve",
             "Disk Read Curve",
             "Disk Write Curve",
             "Network Send Curve",
@@ -469,6 +483,8 @@ class SettingsMixin:
         # Map display names to internal keys
         element_map = {
             "CPU Usage Curve": "cpu",
+            "Memory RAM Curve": "mem_ram",
+            "Memory Swap Curve": "mem_swap",
             "Disk Read Curve": "disk_read",
             "Disk Write Curve": "disk_write",
             "Network Send Curve": "net_sent",
@@ -508,6 +524,10 @@ class SettingsMixin:
 
         if element == "CPU Usage Curve":
             self.cpu_curve.setPen(color_pen)
+        elif element == "Memory RAM Curve":
+            self.mem_ram_curve.setPen(color_pen)
+        elif element == "Memory Swap Curve":
+            self.mem_swap_curve.setPen(color_pen)
         elif element == "Disk Read Curve":
             self.disk_read_curve.setPen(color_pen)
         elif element == "Disk Write Curve":
@@ -518,11 +538,12 @@ class SettingsMixin:
             self.net_recv_curve.setPen(color_pen)
         elif element == "Background Color":
             self.cpu_plot.setBackground(color)
+            self.memory_plot.setBackground(color)
             self.disk_plot.setBackground(color)
             self.net_plot.setBackground(color)
         elif element == "Grid Color":
             # Apply to all plots
-            for plot in [self.cpu_plot, self.disk_plot, self.net_plot]:
+            for plot in [self.cpu_plot, self.memory_plot, self.disk_plot, self.net_plot]:
                 plot.showGrid(x=True, y=True, alpha=0.3)
 
     def reset_graph_colors(self):
@@ -619,6 +640,8 @@ class SettingsMixin:
         """Apply current line thickness to all graph curves"""
         # Get current colors from each curve
         cpu_color = self.cpu_curve.opts['pen'].color()
+        mem_ram_color = self.mem_ram_curve.opts['pen'].color()
+        mem_swap_color = self.mem_swap_curve.opts['pen'].color()
         disk_read_color = self.disk_read_curve.opts['pen'].color()
         disk_write_color = self.disk_write_curve.opts['pen'].color()
         net_sent_color = self.net_sent_curve.opts['pen'].color()
@@ -626,6 +649,8 @@ class SettingsMixin:
 
         # Rebuild pens with new thickness
         self.cpu_curve.setPen(pg.mkPen(color=cpu_color, width=self.line_thickness))
+        self.mem_ram_curve.setPen(pg.mkPen(color=mem_ram_color, width=self.line_thickness))
+        self.mem_swap_curve.setPen(pg.mkPen(color=mem_swap_color, width=self.line_thickness))
         self.disk_read_curve.setPen(pg.mkPen(color=disk_read_color, width=self.line_thickness))
         self.disk_write_curve.setPen(pg.mkPen(color=disk_write_color, width=self.line_thickness))
         self.net_sent_curve.setPen(pg.mkPen(color=net_sent_color, width=self.line_thickness))
@@ -675,6 +700,12 @@ class SettingsMixin:
             # Get colors from CPU plot
             if hasattr(self, 'cpu_curve') and self.cpu_curve:
                 colors['cpu'] = self.cpu_curve.opts['pen'].color().name()
+
+            # Get colors from Memory plot
+            if hasattr(self, 'mem_ram_curve') and self.mem_ram_curve:
+                colors['mem_ram'] = self.mem_ram_curve.opts['pen'].color().name()
+            if hasattr(self, 'mem_swap_curve') and self.mem_swap_curve:
+                colors['mem_swap'] = self.mem_swap_curve.opts['pen'].color().name()
 
             # Get colors from Disk plot
             if hasattr(self, 'disk_read_curve') and self.disk_read_curve:

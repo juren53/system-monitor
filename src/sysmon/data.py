@@ -56,6 +56,9 @@ class DataMixin:
         self.swap_available = swap.free / (1024**2)  # Convert to MB
         self.swap_percent = swap.percent
 
+        self.ram_percent_data.append(self.ram_percent)
+        self.swap_percent_data.append(self.swap_percent)
+
         # Time axis
         if len(self.time_data) == 0:
             self.time_data.append(0)
@@ -63,15 +66,6 @@ class DataMixin:
             self.time_data.append(self.time_data[-1] + elapsed)
 
         self.prev_time = current_time
-
-        # Update memory display labels
-        ram_used_gb = (self.ram_total - self.ram_available) / 1024
-        ram_total_gb = self.ram_total / 1024
-        self.ram_label.setText(f"Memory Usage: {self.ram_percent:.1f}% ({ram_used_gb:.1f}GB / {ram_total_gb:.1f}GB)")
-
-        swap_used_gb = (self.swap_total - self.swap_available) / 1024
-        swap_total_gb = self.swap_total / 1024
-        self.swap_label.setText(f"Swap Usage: {self.swap_percent:.1f}% ({swap_used_gb:.1f}GB / {swap_total_gb:.1f}GB)")
 
         # Update plots
         self.update_plots()
@@ -97,6 +91,12 @@ class DataMixin:
         # Update Disk I/O
         self.disk_read_curve.setData(time_array, disk_read_smoothed)
         self.disk_write_curve.setData(time_array, disk_write_smoothed)
+
+        # Update Memory
+        ram_smoothed = self.apply_smoothing(self.ram_percent_data)
+        swap_smoothed = self.apply_smoothing(self.swap_percent_data)
+        self.mem_ram_curve.setData(time_array, ram_smoothed)
+        self.mem_swap_curve.setData(time_array, swap_smoothed)
 
         # Update Network
         self.net_sent_curve.setData(time_array, net_sent_smoothed)

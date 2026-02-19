@@ -66,6 +66,11 @@ class MenuMixin:
         self.show_cpu_action.triggered.connect(self.toggle_cpu_plot)
         view_menu.addAction(self.show_cpu_action)
 
+        self.show_memory_action = QAction('Show &Memory', self, checkable=True)
+        self.show_memory_action.setChecked(True)
+        self.show_memory_action.triggered.connect(self.toggle_memory_plot)
+        view_menu.addAction(self.show_memory_action)
+
         self.show_disk_action = QAction('Show &Disk I/O', self, checkable=True)
         self.show_disk_action.setChecked(True)
         self.show_disk_action.triggered.connect(self.toggle_disk_plot)

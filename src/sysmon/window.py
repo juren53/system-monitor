@@ -198,6 +198,7 @@ class WindowMixin:
                     # Apply saved axis inversion state to all graphs
                     if self.invert_axis:
                         self.cpu_plot.getPlotItem().getViewBox().invertX(True)
+                        self.memory_plot.getPlotItem().getViewBox().invertX(True)
                         self.disk_plot.getPlotItem().getViewBox().invertX(True)
                         self.net_plot.getPlotItem().getViewBox().invertX(True)
 

@@ -140,9 +140,12 @@ class ThemeMixin:
             disk_write_color = '#2196F3'
             net_sent_color = '#E91E63'
             net_recv_color = '#00BCD4'
+            mem_ram_color = '#2196F3'
+            mem_swap_color = '#FF9800'
 
             # Set plot backgrounds
             self.cpu_plot.setBackground((20, 20, 20))
+            self.memory_plot.setBackground((20, 20, 20))
             self.disk_plot.setBackground((20, 20, 20))
             self.net_plot.setBackground((20, 20, 20))
         else:
@@ -156,9 +159,12 @@ class ThemeMixin:
             disk_write_color = '#4ecdc4'
             net_sent_color = '#ff9ff3'
             net_recv_color = '#54a0ff'
+            mem_ram_color = '#1565C0'
+            mem_swap_color = '#E65100'
 
             # Set plot backgrounds
             self.cpu_plot.setBackground((240, 240, 240))
+            self.memory_plot.setBackground((240, 240, 240))
             self.disk_plot.setBackground((240, 240, 240))
             self.net_plot.setBackground((240, 240, 240))
 
@@ -168,6 +174,14 @@ class ThemeMixin:
         self.cpu_plot.getAxis('bottom').setPen(axis_color)
         self.cpu_plot.getAxis('left').setTextPen(text_color)
         self.cpu_plot.getAxis('bottom').setTextPen(text_color)
+
+        # Apply colors to Memory plot
+        self.mem_ram_curve.setPen(pg.mkPen(color=mem_ram_color, width=self.line_thickness))
+        self.mem_swap_curve.setPen(pg.mkPen(color=mem_swap_color, width=self.line_thickness))
+        self.memory_plot.getAxis('left').setPen(axis_color)
+        self.memory_plot.getAxis('bottom').setPen(axis_color)
+        self.memory_plot.getAxis('left').setTextPen(text_color)
+        self.memory_plot.getAxis('bottom').setTextPen(text_color)
 
         # Apply colors to Disk plot
         self.disk_read_curve.setPen(pg.mkPen(color=disk_read_color, width=self.line_thickness))

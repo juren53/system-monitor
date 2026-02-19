@@ -100,6 +100,8 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         self.net_sent_data = deque(maxlen=self.max_points)
         self.net_recv_data = deque(maxlen=self.max_points)
         self.time_data = deque(maxlen=self.max_points)
+        self.ram_percent_data = deque(maxlen=self.max_points)
+        self.swap_percent_data = deque(maxlen=self.max_points)
 
         # Memory data storage
         self.ram_total = 0
@@ -144,21 +146,6 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
 
-        # Memory info panel
-        memory_layout = QHBoxLayout()
-
-        self.ram_label = QLabel("Memory Usage: --% (--GB / --GB)")
-        self.ram_label.setStyleSheet("QLabel { font-weight: bold; color: #2196F3; }")
-        memory_layout.addWidget(self.ram_label)
-
-        memory_layout.addStretch()
-
-        self.swap_label = QLabel("Swap Usage: --% (--GB / --GB)")
-        self.swap_label.setStyleSheet("QLabel { font-weight: bold; color: #FF9800; }")
-        memory_layout.addWidget(self.swap_label)
-
-        main_layout.addLayout(memory_layout)
-
         # Setup plots with system theme
         self.apply_application_theme()
         pg.setConfigOptions(antialias=True)
@@ -174,6 +161,20 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         self.cpu_plot.scene().sigMouseClicked.connect(
             lambda evt: self.show_realtime_processes('cpu') if evt.button() == Qt.MiddleButton else None)
         main_layout.addWidget(self.cpu_plot)
+
+        # Memory Plot
+        self.memory_plot = pg.PlotWidget(title="Memory Usage (%)")
+        self.memory_plot.setLabel('left', 'Usage', units='%')
+        self.memory_plot.setLabel('bottom', 'Time', units='s')
+        self.memory_plot.setYRange(0, 100)
+        self.memory_plot.setXRange(-self.time_window, 0)
+        self.memory_plot.showGrid(x=True, y=True, alpha=0.3)
+        self.mem_ram_curve = self.memory_plot.plot(
+            pen=pg.mkPen(color='#2196F3', width=self.line_thickness), name='RAM')
+        self.mem_swap_curve = self.memory_plot.plot(
+            pen=pg.mkPen(color='#FF9800', width=self.line_thickness), name='Swap')
+        self.memory_plot.addLegend()
+        main_layout.addWidget(self.memory_plot)
 
         # Disk I/O Plot
         self.disk_plot = pg.PlotWidget(title="Disk I/O (MB/s)")
@@ -207,6 +208,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         # Connect to state change signals to auto-save when user inverts axes
         # All graphs share the same invert_axis setting
         self.cpu_plot.getPlotItem().getViewBox().sigStateChanged.connect(self.on_axis_changed)
+        self.memory_plot.getPlotItem().getViewBox().sigStateChanged.connect(self.on_axis_changed)
         self.disk_plot.getPlotItem().getViewBox().sigStateChanged.connect(self.on_axis_changed)
         self.net_plot.getPlotItem().getViewBox().sigStateChanged.connect(self.on_axis_changed)
 

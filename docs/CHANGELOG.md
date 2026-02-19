@@ -1,5 +1,45 @@
 # Changelog - sysmon.py
 
+## 2026-02-19 0043 CST - Add Memory Usage Graph [ v0.5.0 ]
+
+### New Feature: Memory Usage Graph
+- **Fourth scrolling graph** added to the main window: "Memory Usage (%)"
+- Positioned immediately below the CPU graph (order: CPU → Memory → Disk → Network)
+- Displays two live-updating lines: **RAM %** (blue, `#2196F3`) and **Swap %** (orange, `#FF9800`) with a legend
+- Y-axis fixed at 0–100%; X-axis scrolls with the configured time window
+- Removes the previous text-only RAM/Swap label panel — the graph makes it redundant
+
+### Integration
+- **Smoothing** (`+`/`-` keys) applies to memory curves just like all other graphs
+- **View menu** → "Show Memory" toggle hides/shows the graph
+- **Graph Colors** picker includes "Memory RAM Curve" and "Memory Swap Curve" entries
+- **Line Thickness** dialog applies to memory curves
+- **X-axis inversion** (right-click → Invert X) syncs across all four graphs
+- **Save Data CSV** now includes `Memory RAM %` and `Memory Swap %` columns
+- **Clear Data** clears memory deques along with all other data
+- **Theme switching** (light/dark/auto) applies correct colors to the memory plot
+- **Time window** changes resize memory deques and update the plot X-axis
+
+### Architecture
+- `src/sysmon.py`: Added `ram_percent_data` / `swap_percent_data` deques; `memory_plot` widget with `mem_ram_curve` / `mem_swap_curve`; sigStateChanged connection
+- `src/sysmon/data.py`: Appends percent values to deques each tick; removed label setText calls; updates memory curves in `update_plots()`
+- `src/sysmon/theme.py`: Memory plot theming in `apply_system_theme_to_plots()`
+- `src/sysmon/settings.py`: `update_time_window()`, `on_axis_changed()`, `clear_data()`, `save_data()`, `customize_graph_colors()`, `apply_color_to_element()`, `apply_line_thickness()`, `toggle_memory_plot()`
+- `src/sysmon/menu.py`: "Show &Memory" checkable action in View menu
+- `src/sysmon/window.py`: Axis inversion restored to memory plot on load
+
+### Files Modified
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.0
+- **`src/sysmon.py`**: Memory deques, memory plot widget
+- **`src/sysmon/data.py`**: Deque appends, removed labels, memory curve updates
+- **`src/sysmon/theme.py`**: Memory plot theming
+- **`src/sysmon/settings.py`**: All settings integration + `toggle_memory_plot()`
+- **`src/sysmon/menu.py`**: Show Memory menu action
+- **`src/sysmon/window.py`**: Axis inversion restore
+- **`README.md`**, **`CLAUDE.md`**, **`docs/users-guide.md`**: Version updated to v0.5.0
+
+---
+
 ## 2026-02-17 CST - Add run.ps1 PowerShell Launcher [ v0.4.4 ]
 
 ### New: run.ps1 Windows Launcher
