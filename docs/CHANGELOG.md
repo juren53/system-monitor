@@ -1,5 +1,27 @@
 # Changelog - sysmon.py
 
+## 2026-02-20 0556 CST - Add Graph Hover Status Bar [ v0.5.1 ]
+
+### New Feature: Mouse Hover Status Bar
+- Hovering over any graph now displays live data values in the **status bar** at the bottom of the window
+- **CPU graph**: shows `CPU: 45.2%`
+- **Memory graph**: shows `RAM: 62.1%  |  Swap: 5.3%`
+- **Disk I/O graph**: shows `Disk  Read: 0.12 MB/s  |  Write: 0.04 MB/s`
+- **Network graph**: shows `Network  Sent: 0.01 MB/s  |  Recv: 0.54 MB/s`
+- Status bar clears automatically when the mouse leaves a graph
+
+### Architecture
+- `src/sysmon/window.py`: Added `setup_hover_tracking()`, `eventFilter()`, `_get_value_at_x()`, `on_cpu_hover()`, `on_memory_hover()`, `on_disk_hover()`, `on_net_hover()` to `WindowMixin`; added `QEvent` import
+- `src/sysmon.py`: Calls `setup_hover_tracking()` after `setup_ui()`
+
+### Files Modified
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.1
+- **`src/sysmon.py`**: Version header updated; `setup_hover_tracking()` call added
+- **`src/sysmon/window.py`**: Hover tracking methods added
+- **`README.md`**, **`CLAUDE.md`**: Version updated to v0.5.1
+
+---
+
 ## 2026-02-19 0043 CST - Add Memory Usage Graph [ v0.5.0 ]
 
 ### New Feature: Memory Usage Graph

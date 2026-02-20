@@ -8,7 +8,7 @@ import json
 
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                               QPushButton, QMessageBox)
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QEvent
 from PyQt5.QtGui import QGuiApplication
 
 
@@ -352,3 +352,93 @@ class WindowMixin:
         self.always_on_top = not self.always_on_top
         self.set_always_on_top(self.always_on_top)
         self.save_preferences()
+
+    # Hover Tracking Methods
+
+    def setup_hover_tracking(self):
+        """Setup mouse hover tracking to display live data in the status bar."""
+        self.cpu_plot.scene().sigMouseMoved.connect(self.on_cpu_hover)
+        self.memory_plot.scene().sigMouseMoved.connect(self.on_memory_hover)
+        self.disk_plot.scene().sigMouseMoved.connect(self.on_disk_hover)
+        self.net_plot.scene().sigMouseMoved.connect(self.on_net_hover)
+
+        # Install event filters on each plot's viewport to detect mouse-leave
+        self._hover_viewports = {
+            self.cpu_plot.viewport(),
+            self.memory_plot.viewport(),
+            self.disk_plot.viewport(),
+            self.net_plot.viewport(),
+        }
+        for vp in self._hover_viewports:
+            vp.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        """Clear the status bar when the mouse leaves a graph viewport."""
+        if event.type() == QEvent.Leave and hasattr(self, '_hover_viewports'):
+            if obj in self._hover_viewports:
+                self.statusBar().clearMessage()
+        return super().eventFilter(obj, event)
+
+    def _get_value_at_x(self, data, x_pos):
+        """Return the raw data value whose time index is nearest to x_pos."""
+        if not self.time_data or not data:
+            return None
+        time_array = [t - self.time_data[-1] for t in self.time_data]
+        data_list = list(data)
+        n = min(len(time_array), len(data_list))
+        if n == 0:
+            return None
+        nearest_idx = min(range(n), key=lambda i: abs(time_array[i] - x_pos))
+        return data_list[nearest_idx]
+
+    def on_cpu_hover(self, pos):
+        """Show CPU usage at the hovered time position in the status bar."""
+        if not self.cpu_plot.sceneBoundingRect().contains(pos):
+            self.statusBar().clearMessage()
+            return
+        x = self.cpu_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
+        val = self._get_value_at_x(self.cpu_data, x)
+        if val is not None:
+            self.statusBar().showMessage(f"CPU: {val:.1f}%")
+
+    def on_memory_hover(self, pos):
+        """Show RAM and Swap usage at the hovered time position in the status bar."""
+        if not self.memory_plot.sceneBoundingRect().contains(pos):
+            self.statusBar().clearMessage()
+            return
+        x = self.memory_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
+        ram = self._get_value_at_x(self.ram_percent_data, x)
+        swap = self._get_value_at_x(self.swap_percent_data, x)
+        if ram is not None:
+            msg = f"RAM: {ram:.1f}%"
+            if swap is not None:
+                msg += f"  |  Swap: {swap:.1f}%"
+            self.statusBar().showMessage(msg)
+
+    def on_disk_hover(self, pos):
+        """Show Disk I/O rates at the hovered time position in the status bar."""
+        if not self.disk_plot.sceneBoundingRect().contains(pos):
+            self.statusBar().clearMessage()
+            return
+        x = self.disk_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
+        read = self._get_value_at_x(self.disk_read_data, x)
+        write = self._get_value_at_x(self.disk_write_data, x)
+        if read is not None:
+            msg = f"Disk  Read: {read:.2f} MB/s"
+            if write is not None:
+                msg += f"  |  Write: {write:.2f} MB/s"
+            self.statusBar().showMessage(msg)
+
+    def on_net_hover(self, pos):
+        """Show Network rates at the hovered time position in the status bar."""
+        if not self.net_plot.sceneBoundingRect().contains(pos):
+            self.statusBar().clearMessage()
+            return
+        x = self.net_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
+        sent = self._get_value_at_x(self.net_sent_data, x)
+        recv = self._get_value_at_x(self.net_recv_data, x)
+        if sent is not None:
+            msg = f"Network  Sent: {sent:.2f} MB/s"
+            if recv is not None:
+                msg += f"  |  Recv: {recv:.2f} MB/s"
+            self.statusBar().showMessage(msg)
