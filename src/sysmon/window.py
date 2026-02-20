@@ -356,27 +356,54 @@ class WindowMixin:
     # Hover Tracking Methods
 
     def setup_hover_tracking(self):
-        """Setup mouse hover tracking to display live data in the status bar."""
+        """Setup in-graph QLabel overlays that display live data on hover."""
+        self.statusBar().hide()
+
+        # Remove PyQtGraph's built-in auto-range 'A' button from all plots
+        for plot in (self.cpu_plot, self.memory_plot, self.disk_plot, self.net_plot):
+            plot.getPlotItem().hideButtons()
+
+        _style = (
+            "background-color: #1e1e1e;"
+            "color: #e0e0e0;"
+            "padding: 3px 6px;"
+            "border-radius: 3px;"
+            "font-size: 10pt;"
+        )
+
+        # Parent to viewport() — the actual drawing surface of the QGraphicsView.
+        # Parenting to the PlotWidget itself puts the label behind the viewport.
+        self._cpu_hover_label  = QLabel(self.cpu_plot.viewport())
+        self._mem_hover_label  = QLabel(self.memory_plot.viewport())
+        self._disk_hover_label = QLabel(self.disk_plot.viewport())
+        self._net_hover_label  = QLabel(self.net_plot.viewport())
+
+        for lbl in (self._cpu_hover_label, self._mem_hover_label,
+                    self._disk_hover_label, self._net_hover_label):
+            lbl.setStyleSheet(_style)
+            lbl.setAttribute(Qt.WA_TransparentForMouseEvents)
+            lbl.hide()
+
         self.cpu_plot.scene().sigMouseMoved.connect(self.on_cpu_hover)
         self.memory_plot.scene().sigMouseMoved.connect(self.on_memory_hover)
         self.disk_plot.scene().sigMouseMoved.connect(self.on_disk_hover)
         self.net_plot.scene().sigMouseMoved.connect(self.on_net_hover)
 
-        # Install event filters on each plot's viewport to detect mouse-leave
-        self._hover_viewports = {
-            self.cpu_plot.viewport(),
-            self.memory_plot.viewport(),
-            self.disk_plot.viewport(),
-            self.net_plot.viewport(),
+        self._hover_label_map = {
+            self.cpu_plot.viewport():    self._cpu_hover_label,
+            self.memory_plot.viewport(): self._mem_hover_label,
+            self.disk_plot.viewport():   self._disk_hover_label,
+            self.net_plot.viewport():    self._net_hover_label,
         }
-        for vp in self._hover_viewports:
+        for vp in self._hover_label_map:
             vp.installEventFilter(self)
 
     def eventFilter(self, obj, event):
-        """Clear the status bar when the mouse leaves a graph viewport."""
-        if event.type() == QEvent.Leave and hasattr(self, '_hover_viewports'):
-            if obj in self._hover_viewports:
-                self.statusBar().clearMessage()
+        """Hide the overlay when the mouse leaves a plot viewport."""
+        if event.type() == QEvent.Leave and hasattr(self, '_hover_label_map'):
+            label = self._hover_label_map.get(obj)
+            if label:
+                label.hide()
         return super().eventFilter(obj, event)
 
     def _get_value_at_x(self, data, x_pos):
@@ -391,54 +418,81 @@ class WindowMixin:
         nearest_idx = min(range(n), key=lambda i: abs(time_array[i] - x_pos))
         return data_list[nearest_idx]
 
+    def _show_hover_label(self, label, plot, text):
+        """Show the hover label anchored to the top-left corner of the data canvas."""
+        # mapFromScene converts the ViewBox's top-left scene point to viewport pixels,
+        # correctly accounting for the title and axis areas that surround the canvas.
+        vb = plot.getPlotItem().getViewBox()
+        pt = plot.mapFromScene(vb.sceneBoundingRect().topLeft())
+        label.setText(text)
+        label.adjustSize()
+        label.move(pt.x() + 4, pt.y() + 4)
+        label.show()
+        label.raise_()
+
+    def _pen_color(self, curve):
+        """Return the hex color string from a PlotDataItem's current pen."""
+        pen = curve.opts.get('pen')
+        if pen is not None and hasattr(pen, 'color'):
+            return pen.color().name()
+        return '#e0e0e0'
+
     def on_cpu_hover(self, pos):
-        """Show CPU usage at the hovered time position in the status bar."""
+        """Show CPU usage overlay on the CPU graph."""
         if not self.cpu_plot.sceneBoundingRect().contains(pos):
-            self.statusBar().clearMessage()
+            self._cpu_hover_label.hide()
             return
         x = self.cpu_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
         val = self._get_value_at_x(self.cpu_data, x)
         if val is not None:
-            self.statusBar().showMessage(f"CPU: {val:.1f}%")
+            c = self._pen_color(self.cpu_curve)
+            html = f'<span style="color:{c};">CPU: {val:.1f}%</span>'
+            self._show_hover_label(self._cpu_hover_label, self.cpu_plot, html)
 
     def on_memory_hover(self, pos):
-        """Show RAM and Swap usage at the hovered time position in the status bar."""
+        """Show RAM and Swap usage overlay on the Memory graph."""
         if not self.memory_plot.sceneBoundingRect().contains(pos):
-            self.statusBar().clearMessage()
+            self._mem_hover_label.hide()
             return
         x = self.memory_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
-        ram = self._get_value_at_x(self.ram_percent_data, x)
+        ram  = self._get_value_at_x(self.ram_percent_data, x)
         swap = self._get_value_at_x(self.swap_percent_data, x)
         if ram is not None:
-            msg = f"RAM: {ram:.1f}%"
+            cr = self._pen_color(self.mem_ram_curve)
+            cs = self._pen_color(self.mem_swap_curve)
+            html = f'<span style="color:{cr};">RAM: {ram:.1f}%</span>'
             if swap is not None:
-                msg += f"  |  Swap: {swap:.1f}%"
-            self.statusBar().showMessage(msg)
+                html += f'<span style="color:#888888;">  |  </span><span style="color:{cs};">Swap: {swap:.1f}%</span>'
+            self._show_hover_label(self._mem_hover_label, self.memory_plot, html)
 
     def on_disk_hover(self, pos):
-        """Show Disk I/O rates at the hovered time position in the status bar."""
+        """Show Disk I/O overlay on the Disk graph."""
         if not self.disk_plot.sceneBoundingRect().contains(pos):
-            self.statusBar().clearMessage()
+            self._disk_hover_label.hide()
             return
         x = self.disk_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
-        read = self._get_value_at_x(self.disk_read_data, x)
+        read  = self._get_value_at_x(self.disk_read_data, x)
         write = self._get_value_at_x(self.disk_write_data, x)
         if read is not None:
-            msg = f"Disk  Read: {read:.2f} MB/s"
+            cr = self._pen_color(self.disk_read_curve)
+            cw = self._pen_color(self.disk_write_curve)
+            html = f'<span style="color:{cr};">Read: {read:.2f} MB/s</span>'
             if write is not None:
-                msg += f"  |  Write: {write:.2f} MB/s"
-            self.statusBar().showMessage(msg)
+                html += f'<span style="color:#888888;">  |  </span><span style="color:{cw};">Write: {write:.2f} MB/s</span>'
+            self._show_hover_label(self._disk_hover_label, self.disk_plot, html)
 
     def on_net_hover(self, pos):
-        """Show Network rates at the hovered time position in the status bar."""
+        """Show Network overlay on the Network graph."""
         if not self.net_plot.sceneBoundingRect().contains(pos):
-            self.statusBar().clearMessage()
+            self._net_hover_label.hide()
             return
         x = self.net_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
         sent = self._get_value_at_x(self.net_sent_data, x)
         recv = self._get_value_at_x(self.net_recv_data, x)
         if sent is not None:
-            msg = f"Network  Sent: {sent:.2f} MB/s"
+            cs = self._pen_color(self.net_sent_curve)
+            cr = self._pen_color(self.net_recv_curve)
+            html = f'<span style="color:{cs};">Sent: {sent:.2f} MB/s</span>'
             if recv is not None:
-                msg += f"  |  Recv: {recv:.2f} MB/s"
-            self.statusBar().showMessage(msg)
+                html += f'<span style="color:#888888;">  |  </span><span style="color:{cr};">Recv: {recv:.2f} MB/s</span>'
+            self._show_hover_label(self._net_hover_label, self.net_plot, html)

@@ -1,5 +1,33 @@
 # Changelog - sysmon.py
 
+## 2026-02-20 0626 CST - Color-matched hover overlays [ v0.5.2 ]
+
+### Enhancement: Graph-color matched hover labels
+- Hover overlay text is now colored to match each graph's curve(s)
+- **CPU**: value displayed in the CPU curve color
+- **Memory**: RAM value in RAM curve color, Swap value in Swap curve color
+- **Disk I/O**: Read value in Read curve color, Write value in Write curve color
+- **Network**: Sent value in Sent curve color, Recv value in Recv curve color
+- Separator `|` rendered in neutral grey so it doesn't compete with data values
+- Colors are read live from each curve's pen — user-customized graph colors are automatically reflected in the hover overlay with no extra wiring
+
+### Bug Fixes (from v0.5.1 hover overlay work)
+- Fixed hover labels not appearing: `QLabel` now parented to `plot.viewport()` (the actual drawing surface) instead of the `PlotWidget` wrapper, which rendered labels behind the scene
+- Removed `WA_TranslucentBackground` — `rgba()` stylesheet backgrounds require compositor support on Linux; replaced with a solid `#1e1e1e` background that works on all platforms
+- Fixed hover label position: `plot.mapFromScene(viewBox.sceneBoundingRect().topLeft())` correctly places the label inside the data canvas, accounting for title and axis areas
+- Removed PyQtGraph's built-in auto-range 'A' button (`hideButtons()`) which became visible after the status bar was hidden
+
+### Architecture
+- `src/sysmon/window.py`: Added `_pen_color(curve)` helper; all `on_*_hover` methods now build HTML `<span style="color:...">` strings instead of plain text
+
+### Files Modified
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.2
+- **`src/sysmon.py`**: Version header updated
+- **`src/sysmon/window.py`**: Color-matched HTML hover labels; bug fixes
+- **`README.md`**, **`CLAUDE.md`**: Version updated to v0.5.2
+
+---
+
 ## 2026-02-20 0556 CST - Add Graph Hover Status Bar [ v0.5.1 ]
 
 ### New Feature: Mouse Hover Status Bar
