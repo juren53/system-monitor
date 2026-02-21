@@ -9,7 +9,19 @@
       "Bash(pip show:*)",
       "Bash(pyinstaller:*)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(python -m PyInstaller:*)",
+      "Bash(pip install:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(TZ='America/Chicago' date:*)",
+      "Bash(gh release create:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(dir:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Path $env:USERPROFILE -Directory | Select-Object Name\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path $env:USERPROFILE\\\\Projects -Directory | Select-Object Name\")"
     ]
   }
 }
