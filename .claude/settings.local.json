@@ -10,6 +10,7 @@
       "Bash(pyinstaller:*)",
       "Bash(git pull:*)",
       "Bash(git stash:*)",
+<<<<<<< Updated upstream
       "Bash(python -m PyInstaller:*)",
       "Bash(pip install:*)",
       "Bash(wc:*)",
@@ -22,6 +23,11 @@
       "Bash(dir:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path $env:USERPROFILE -Directory | Select-Object Name\")",
       "Bash(powershell -Command \"Get-ChildItem -Path $env:USERPROFILE\\\\Projects -Directory | Select-Object Name\")"
+=======
+      "Bash(TZ='America/Chicago' date:*)",
+      "Bash(gh release edit:*)",
+      "Bash(gh release create:*)"
+>>>>>>> Stashed changes
     ]
   }
 }
