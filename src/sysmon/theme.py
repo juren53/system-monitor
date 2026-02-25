@@ -118,6 +118,39 @@ class ThemeMixin:
         # Apply palette to the application
         QApplication.instance().setPalette(palette)
 
+        # Apply explicit menu bar stylesheet — Qt's native Windows style overrides
+        # the palette for QMenuBar/QMenu, making text washed out in dark mode.
+        if is_dark:
+            self.menuBar().setStyleSheet("""
+                QMenuBar {
+                    background-color: #353535;
+                    color: #e0e0e0;
+                }
+                QMenuBar::item:selected {
+                    background-color: #2a82da;
+                    color: #ffffff;
+                }
+                QMenuBar::item:pressed {
+                    background-color: #1a6bbf;
+                    color: #ffffff;
+                }
+                QMenu {
+                    background-color: #353535;
+                    color: #e0e0e0;
+                    border: 1px solid #555555;
+                }
+                QMenu::item:selected {
+                    background-color: #2a82da;
+                    color: #ffffff;
+                }
+                QMenu::separator {
+                    height: 1px;
+                    background-color: #555555;
+                }
+            """)
+        else:
+            self.menuBar().setStyleSheet("")  # Restore native light rendering
+
         # Also apply to PyQtGraph theme and plots (if they exist)
         self.setup_pyqtgraph_theme()
         if hasattr(self, 'cpu_plot'):
