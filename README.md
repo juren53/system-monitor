@@ -53,6 +53,22 @@ pip install -r requirements.txt
 python3 src/sysmon.py
 ```
 
+### Windows Desktop Integration (Start Menu & Taskbar)
+
+After building or downloading `SysMon.exe`, run the install script to add SysMon to the Start Menu:
+
+```powershell
+.\install-windows.ps1
+```
+
+This creates a Start Menu shortcut at `%APPDATA%\Microsoft\Windows\Start Menu\Programs\SysMon.lnk` pointing to `%USERPROFILE%\bin\SysMon.exe` with the application icon.
+
+**To pin to the Taskbar** (Windows 11 blocks programmatic pinning):
+1. Press **Start**, type `SysMon`
+2. Right-click the result → **Pin to taskbar**
+
+> If you see an execution policy error, run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` once first.
+
 ### Requirements
 - Python 3.7+
 - PyQt5, PyQtGraph, psutil, numpy, markdown, pygments
