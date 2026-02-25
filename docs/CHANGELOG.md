@@ -1,5 +1,22 @@
 # Changelog - sysmon.py
 
+## 2026-02-25 0257 CST - Fix Theme-Aware Hover Labels [ v0.5.4 ]
+
+### Bug Fix: Hover labels now respect current theme
+- Hover overlay labels were hardcoded to dark theme colors (`#1e1e1e` bg / `#e0e0e0` text), appearing broken in light mode
+- Added `_hover_label_style()` helper in `window.py` that returns the correct stylesheet based on `is_dark_theme()`
+- Dark theme: `#1e1e1e` background, `#e0e0e0` text
+- Light theme: `#f0f0f0` background, `#1a1a1a` text
+- Hover labels now re-style automatically when the user switches themes via `apply_application_theme()`
+
+### Files Modified
+- **`src/sysmon/window.py`**: Added `_hover_label_style()` helper; applied in `setup_hover_tracking()`
+- **`src/sysmon/theme.py`**: `apply_application_theme()` re-styles hover labels on theme change
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.4
+- **`README.md`**, **`CLAUDE.md`**: Version updated to v0.5.4
+
+---
+
 ## 2026-02-25 0222 CST - Windows Desktop Integration [ v0.5.3 ]
 
 ### New: Windows Install Script
