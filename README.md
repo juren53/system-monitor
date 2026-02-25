@@ -1,7 +1,7 @@
 # SysMon - Real-time System Monitor
 
-**Version:** v0.5.2 (Production Release)
-**Release Date:** 2026-02-20
+**Version:** v0.5.3 (Production Release)
+**Release Date:** 2026-02-25
 
 ## Description
 Comprehensive system monitoring application with real-time graphs for CPU, Disk I/O, and Network activity. Built with PyQtGraph for performance visualization.
