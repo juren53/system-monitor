@@ -355,6 +355,25 @@ class WindowMixin:
 
     # Hover Tracking Methods
 
+    def _hover_label_style(self):
+        """Return hover label stylesheet appropriate for the current theme."""
+        if self.is_dark_theme():
+            return (
+                "background-color: #1e1e1e;"
+                "color: #e0e0e0;"
+                "padding: 3px 6px;"
+                "border-radius: 3px;"
+                "font-size: 10pt;"
+            )
+        else:
+            return (
+                "background-color: #f0f0f0;"
+                "color: #1a1a1a;"
+                "padding: 3px 6px;"
+                "border-radius: 3px;"
+                "font-size: 10pt;"
+            )
+
     def setup_hover_tracking(self):
         """Setup in-graph QLabel overlays that display live data on hover."""
         self.statusBar().hide()
@@ -362,14 +381,6 @@ class WindowMixin:
         # Remove PyQtGraph's built-in auto-range 'A' button from all plots
         for plot in (self.cpu_plot, self.memory_plot, self.disk_plot, self.net_plot):
             plot.getPlotItem().hideButtons()
-
-        _style = (
-            "background-color: #1e1e1e;"
-            "color: #e0e0e0;"
-            "padding: 3px 6px;"
-            "border-radius: 3px;"
-            "font-size: 10pt;"
-        )
 
         # Parent to viewport() — the actual drawing surface of the QGraphicsView.
         # Parenting to the PlotWidget itself puts the label behind the viewport.
@@ -380,7 +391,7 @@ class WindowMixin:
 
         for lbl in (self._cpu_hover_label, self._mem_hover_label,
                     self._disk_hover_label, self._net_hover_label):
-            lbl.setStyleSheet(_style)
+            lbl.setStyleSheet(self._hover_label_style())
             lbl.setAttribute(Qt.WA_TransparentForMouseEvents)
             lbl.hide()
 

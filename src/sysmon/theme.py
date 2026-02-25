@@ -123,6 +123,13 @@ class ThemeMixin:
         if hasattr(self, 'cpu_plot'):
             self.apply_system_theme_to_plots()
 
+        # Re-style hover labels to match new theme
+        if hasattr(self, '_cpu_hover_label'):
+            style = self._hover_label_style()
+            for lbl in (self._cpu_hover_label, self._mem_hover_label,
+                        self._disk_hover_label, self._net_hover_label):
+                lbl.setStyleSheet(style)
+
     def apply_system_theme_to_plots(self):
         """Apply system theme colors to plots"""
         # Use the is_dark_theme method which respects manual theme selection
