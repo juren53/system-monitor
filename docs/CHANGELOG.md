@@ -4,12 +4,18 @@
 
 ### New: Windows Install Script
 - Added `install-windows.ps1` to create a Start Menu shortcut for `%USERPROFILE%\bin\SysMon.exe`
-- Shortcut includes the SysMon icon (`icons/ICON_SysMon.ico`) and correct working directory
+- Shortcut uses the icon embedded in the exe — always matches the current build automatically
+- Icon cache flushed after install so the correct icon appears immediately in Start Menu
 - Attempts automatic taskbar pinning; falls back gracefully on Windows 11 (which blocks programmatic pinning) with clear manual instructions
 - README updated with Windows desktop integration section
 
+### Bug Fix: Regenerate corrupt app.ico
+- `icons/app.ico` was corrupt, causing PyInstaller build failure
+- Regenerated from multi-resolution PNGs (`app_16x16.png` → `app_256x256.png`) using Pillow
+
 ### Files Modified
 - **`install-windows.ps1`**: New Windows desktop integration script
+- **`icons/app.ico`**: Regenerated from multi-resolution PNGs
 - **`README.md`**: Added Windows Desktop Integration section under Installation
 - **`src/sysmon/constants.py`**: Version bumped to 0.5.3
 - **`CLAUDE.md`**: Version updated to v0.5.3
