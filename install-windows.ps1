@@ -3,7 +3,6 @@
 # Run from PowerShell: .\install-windows.ps1
 
 $ExePath  = "$env:USERPROFILE\bin\SysMon.exe"
-$IconPath = "$PSScriptRoot\icons\ICON_SysMon.ico"
 $StartMenuDir = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs"
 $ShortcutPath = "$StartMenuDir\SysMon.lnk"
 
@@ -14,15 +13,17 @@ if (-not (Test-Path $ExePath)) {
 }
 
 # --- Create Start Menu shortcut ------------------------------------------------
+# Use the icon embedded in the exe so shortcut icon always matches the build.
 $Shell    = New-Object -ComObject WScript.Shell
 $Shortcut = $Shell.CreateShortcut($ShortcutPath)
 $Shortcut.TargetPath       = $ExePath
 $Shortcut.WorkingDirectory = Split-Path $ExePath
 $Shortcut.Description      = "SysMon - Real-Time System Monitor"
-if (Test-Path $IconPath) {
-    $Shortcut.IconLocation = "$IconPath,0"
-}
+$Shortcut.IconLocation     = "$ExePath,0"
 $Shortcut.Save()
+
+# Flush the Windows icon cache so the new icon appears immediately.
+ie4uinit.exe -show
 
 Write-Host "Start Menu shortcut created: $ShortcutPath" -ForegroundColor Green
 
