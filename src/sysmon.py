@@ -128,6 +128,11 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         # Load preferences after timer is created
         self.load_window_geometry()
 
+        # Re-apply theme now that saved theme_mode has been loaded from prefs.
+        # apply_application_theme() was called earlier in setup_ui() before
+        # load_window_geometry(), so it ran with the default 'auto' mode.
+        self.apply_application_theme()
+
         # Add periodic save timer as backup
         self.save_timer = QTimer()
         self.save_timer.timeout.connect(self.save_window_geometry)
