@@ -1,5 +1,21 @@
 # Changelog - sysmon.py
 
+## 2026-02-25 0222 CST - Windows Desktop Integration [ v0.5.3 ]
+
+### New: Windows Install Script
+- Added `install-windows.ps1` to create a Start Menu shortcut for `%USERPROFILE%\bin\SysMon.exe`
+- Shortcut includes the SysMon icon (`icons/ICON_SysMon.ico`) and correct working directory
+- Attempts automatic taskbar pinning; falls back gracefully on Windows 11 (which blocks programmatic pinning) with clear manual instructions
+- README updated with Windows desktop integration section
+
+### Files Modified
+- **`install-windows.ps1`**: New Windows desktop integration script
+- **`README.md`**: Added Windows Desktop Integration section under Installation
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.3
+- **`CLAUDE.md`**: Version updated to v0.5.3
+
+---
+
 ## 2026-02-20 0626 CST - Color-matched hover overlays [ v0.5.2 ]
 
 ### Enhancement: Graph-color matched hover labels
