@@ -1,6 +1,6 @@
 # SysMon - Real-time System Monitor
 
-**Version:** v0.5.4 (Production Release)
+**Version:** v0.5.5 (Production Release)
 **Release Date:** 2026-02-25
 
 ## Description

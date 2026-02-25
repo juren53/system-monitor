@@ -1,5 +1,25 @@
 # Changelog - sysmon.py
 
+## 2026-02-25 0311 CST - Fix Dark Mode Theme Bugs [ v0.5.5 ]
+
+### Bug Fix: Dark mode not restored on startup
+- SysMon defaulted to Light Mode on startup even when Dark Mode was saved and selected
+- Root cause: `apply_application_theme()` was called in `setup_ui()` before `load_window_geometry()`, so `theme_mode` was always `'auto'` at first apply; saved preference loaded too late
+- Fix: added a second `apply_application_theme()` call in `__init__()` after `load_window_geometry()` so the saved theme is applied correctly
+
+### Bug Fix: Washed-out menu bar text in dark mode
+- Menu bar labels were barely readable in dark mode
+- Root cause: Qt's native Windows style overrides QPalette for QMenuBar/QMenu
+- Fix: explicit QMenuBar/QMenu stylesheet applied in dark mode (`#e0e0e0` text on `#353535` background); light mode restores native rendering
+
+### Files Modified
+- **`src/sysmon.py`**: Added `apply_application_theme()` call after `load_window_geometry()`
+- **`src/sysmon/theme.py`**: Explicit QMenuBar/QMenu dark mode stylesheet
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.5
+- **`README.md`**, **`CLAUDE.md`**: Version updated to v0.5.5
+
+---
+
 ## 2026-02-25 0257 CST - Fix Theme-Aware Hover Labels [ v0.5.4 ]
 
 ### Bug Fix: Hover labels now respect current theme
