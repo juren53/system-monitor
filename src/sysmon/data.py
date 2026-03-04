@@ -33,6 +33,8 @@ class DataMixin:
             write_rate = (disk_io.write_bytes - self.prev_disk_io.write_bytes) / elapsed / (1024**2)
             self.disk_read_data.append(max(0, read_rate))
             self.disk_write_data.append(max(0, write_rate))
+            self.disk_read_mb_data.append(max(0, (disk_io.read_bytes - self.prev_disk_io.read_bytes) / (1024**2)))
+            self.disk_write_mb_data.append(max(0, (disk_io.write_bytes - self.prev_disk_io.write_bytes) / (1024**2)))
             self.prev_disk_io = disk_io
 
         # Network I/O

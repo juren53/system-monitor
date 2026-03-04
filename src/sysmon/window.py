@@ -438,15 +438,23 @@ class WindowMixin:
         nearest_idx = min(range(n), key=lambda i: abs(time_array[i] - x_pos))
         return data_list[nearest_idx]
 
-    def _show_hover_label(self, label, plot, text):
-        """Show the hover label anchored to the top-left corner of the data canvas."""
-        # mapFromScene converts the ViewBox's top-left scene point to viewport pixels,
-        # correctly accounting for the title and axis areas that surround the canvas.
+    def _show_hover_label(self, label, plot, text, align='left'):
+        """Show the hover label anchored to the top corner of the data canvas.
+
+        align='left'  — top-left corner (default)
+        align='right' — top-right corner
+        """
         vb = plot.getPlotItem().getViewBox()
-        pt = plot.mapFromScene(vb.sceneBoundingRect().topLeft())
-        label.setText(text)
-        label.adjustSize()
-        label.move(pt.x() + 4, pt.y() + 4)
+        if align == 'right':
+            pt = plot.mapFromScene(vb.sceneBoundingRect().topRight())
+            label.setText(text)
+            label.adjustSize()
+            label.move(pt.x() - label.width() - 4, pt.y() + 4)
+        else:
+            pt = plot.mapFromScene(vb.sceneBoundingRect().topLeft())
+            label.setText(text)
+            label.adjustSize()
+            label.move(pt.x() + 4, pt.y() + 4)
         label.show()
         label.raise_()
 
@@ -499,7 +507,12 @@ class WindowMixin:
             html = f'<span style="color:{cr};">Read: {read:.2f} MB/s</span>'
             if write is not None:
                 html += f'<span style="color:#888888;">  |  </span><span style="color:{cw};">Write: {write:.2f} MB/s</span>'
-            self._show_hover_label(self._disk_hover_label, self.disk_plot, html)
+            total_read = sum(self.disk_read_mb_data)
+            total_write = sum(self.disk_write_mb_data)
+            html += f'<br><span style="color:{cr};">R {_fmt_mb(total_read)}</span>'
+            html += f'<span style="color:#888888;">  |  </span>'
+            html += f'<span style="color:{cw};">W {_fmt_mb(total_write)}</span>'
+            self._show_hover_label(self._disk_hover_label, self.disk_plot, html, align='right')
 
     def on_net_hover(self, pos):
         """Show Network overlay on the Network graph."""
@@ -520,4 +533,4 @@ class WindowMixin:
             html += f'<br><span style="color:{cs};">↑ {_fmt_mb(total_sent)}</span>'
             html += f'<span style="color:#888888;">  |  </span>'
             html += f'<span style="color:{cr};">↓ {_fmt_mb(total_recv)}</span>'
-            self._show_hover_label(self._net_hover_label, self.net_plot, html)
+            self._show_hover_label(self._net_hover_label, self.net_plot, html, align='right')

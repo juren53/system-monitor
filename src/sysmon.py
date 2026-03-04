@@ -97,6 +97,8 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         self.cpu_data = deque(maxlen=self.max_points)
         self.disk_read_data = deque(maxlen=self.max_points)
         self.disk_write_data = deque(maxlen=self.max_points)
+        self.disk_read_mb_data = deque(maxlen=self.max_points)
+        self.disk_write_mb_data = deque(maxlen=self.max_points)
         self.net_sent_data = deque(maxlen=self.max_points)
         self.net_recv_data = deque(maxlen=self.max_points)
         self.net_sent_mb_data = deque(maxlen=self.max_points)

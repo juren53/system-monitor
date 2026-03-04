@@ -1,5 +1,28 @@
 # Changelog - sysmon.py
 
+## 2026-03-04 0003 CST - Disk I/O Hover Cumulative MB Totals + Upper-Right Label [ v0.5.7 ]
+
+### New Feature: Cumulative MB totals in Disk I/O graph hover label
+- Disk I/O hover overlay now shows a second line with total data read/written during the visible time window
+- First line: instantaneous `Read: X.XX MB/s | Write: X.XX MB/s` (unchanged)
+- Second line: cumulative `R X.XX MB | W X.XX MB` totals for the current window
+- Totals update automatically when the time window changes (Ctrl+Up/Down)
+- Values auto-scale: KB (< 1 MB), MB (< 1 GB), GB (larger) — reuses `_fmt_mb()` helper
+
+### Change: Disk I/O hover label moved to upper-right
+- Hover label now anchors to the top-right corner of the Disk I/O graph data canvas
+- Consistent with the Network Traffic graph label position added in v0.5.6
+
+### Files Modified
+- **`src/sysmon.py`**: Added `disk_read_mb_data` and `disk_write_mb_data` deques
+- **`src/sysmon/data.py`**: Populate new deques with raw MB per update tick
+- **`src/sysmon/settings.py`**: Include new deques in `update_time_window()` trim loop
+- **`src/sysmon/window.py`**: `on_disk_hover()` computes and displays window totals; passes `align='right'`
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.7
+- **`README.md`**, **`CLAUDE.md`**: Version updated to v0.5.7
+
+---
+
 ## 2026-03-03 2337 CST - Network Hover Total MB Display [ v0.5.6 ]
 
 ### New Feature: Cumulative MB totals in Network graph hover label
