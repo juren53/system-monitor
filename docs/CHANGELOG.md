@@ -1,5 +1,20 @@
 # Changelog - sysmon.py
 
+## 2026-03-04 1045 CST - Graph Colors dialog preview swatch [ v0.5.9 ]
+
+### Fix: Graph Colors dialog now shows a real color preview
+- Replaced the blank "Preview:" label with a live color swatch panel
+- Swatch fills with the selected element's current color when the dropdown changes
+- Picking a color via "Select Color" updates the swatch immediately (before Apply)
+- Hex value (e.g. `#C8C8C8`) is displayed inside the swatch with auto-contrast text (black/white)
+- Theme-default elements (no custom color set) show a gray swatch with "(Theme Default)" label
+
+### Files Modified
+- **`src/sysmon/settings.py`**: Added `color_preview_swatch` QFrame + `color_preview_hex` QLabel; updated `update_graph_color_display()` and `select_graph_color()` to drive the swatch
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.9
+
+---
+
 ## 2026-03-04 0709 CST - ThemeManager Integration: 6 Rich Themes [ v0.5.8 ]
 
 ### New Feature: ThemeManager theme system replaces simple Auto/Dark/Light dialog

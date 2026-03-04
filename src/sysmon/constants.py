@@ -8,14 +8,14 @@ import platform
 import datetime
 
 # Version Information
-VERSION = "0.5.8"
+VERSION = "0.5.9"
 RELEASE_DATE = "2026-03-04"
-RELEASE_TIME = "0709 CST"
+RELEASE_TIME = "1045 CST"
 FULL_VERSION = f"v{VERSION} {RELEASE_DATE} {RELEASE_TIME}"
 
 # Build Information
 BUILD_DATE = "2026-03-04"
-BUILD_TIME = "0709 CST"
+BUILD_TIME = "1045 CST"
 BUILD_INFO = f"{BUILD_DATE} {BUILD_TIME}"
 
 # Runtime Information

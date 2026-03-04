@@ -381,9 +381,18 @@ class SettingsMixin:
         layout.addLayout(color_layout)
 
         # Preview area
-        preview_label = QLabel("Preview:")
-        preview_label.setStyleSheet("font-weight: bold; margin: 10px 0;")
-        layout.addWidget(preview_label)
+        preview_header = QLabel("Preview:")
+        preview_header.setStyleSheet("font-weight: bold; margin-top: 10px;")
+        layout.addWidget(preview_header)
+
+        self.color_preview_swatch = QFrame()
+        self.color_preview_swatch.setMinimumHeight(60)
+        self.color_preview_swatch.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
+        self.color_preview_hex = QLabel("", self.color_preview_swatch)
+        self.color_preview_hex.setAlignment(Qt.AlignCenter)
+        swatch_layout = QVBoxLayout(self.color_preview_swatch)
+        swatch_layout.addWidget(self.color_preview_hex)
+        layout.addWidget(self.color_preview_swatch)
 
         # Buttons
         button_layout = QHBoxLayout()
@@ -402,11 +411,18 @@ class SettingsMixin:
 
         dialog.setLayout(layout)
 
-        # Update display initially
+        # Store dialog ref so select_graph_color can use it as QColorDialog parent
+        self.graph_color_dialog = dialog
+
+        # Update display when selection changes and on initial open
+        self.graph_selector.currentIndexChanged.connect(self.update_graph_color_display)
         self.update_graph_color_display()
 
-        # Show dialog
+        # Ensure dialog is on top before showing (Linux window ordering)
+        dialog.raise_()
+        dialog.activateWindow()
         dialog.exec_()
+        self.graph_color_dialog = None
 
     def select_graph_color(self):
         """Open color picker for selected graph element"""
@@ -428,12 +444,27 @@ class SettingsMixin:
         color_key = element_map.get(selected_element)
         current_color = current_colors.get(color_key, '#ffffff') if color_key else '#ffffff'
 
-        # Open color dialog with current color
-        color = QColorDialog.getColor(QColor(current_color), self, "Select Color")
+        # Open color dialog parented to the graph colors dialog (not the main window)
+        # so it stays in front and focus returns correctly on Linux
+        parent = getattr(self, 'graph_color_dialog', None) or self
+        color = QColorDialog.getColor(QColor(current_color), parent, "Select Color")
+
+        # Restore graph colors dialog focus after QColorDialog closes
+        if parent is not self:
+            parent.raise_()
+            parent.activateWindow()
+
         if color.isValid():
+            hex_color = color.name()
             # Update display
-            self.color_display.setText(f"Current: {color.name()}")
-            self.color_display.setStyleSheet(f"background-color: {color.name()}; color: white; padding: 5px; min-width: 100px; font-weight: bold;")
+            self.color_display.setText(f"Current: {hex_color}")
+            self.color_display.setStyleSheet(f"background-color: {hex_color}; color: white; padding: 5px; min-width: 100px; font-weight: bold;")
+            # Update preview swatch
+            brightness = (color.red() * 299 + color.green() * 587 + color.blue() * 114) // 1000
+            text_color = "#000000" if brightness > 128 else "#ffffff"
+            self.color_preview_swatch.setStyleSheet(f"background-color: {hex_color};")
+            self.color_preview_hex.setText(hex_color.upper())
+            self.color_preview_hex.setStyleSheet(f"color: {text_color}; font-weight: bold; font-size: 13px;")
 
     def apply_graph_color(self):
         """Apply selected color to chosen graph element"""
@@ -447,6 +478,9 @@ class SettingsMixin:
 
                 # Save to preferences
                 self.save_graph_colors_preference(selected_element, color.name())
+
+                # Refresh swatch to confirm applied color
+                self.update_graph_color_display()
 
     def apply_color_to_element(self, element, color):
         """Apply color to specific graph element"""
@@ -704,15 +738,39 @@ class SettingsMixin:
 
     def update_graph_color_display(self):
         """Update the color display when selection changes"""
+        element_map = {
+            "CPU Usage Curve": "cpu",
+            "Memory RAM Curve": "mem_ram",
+            "Memory Swap Curve": "mem_swap",
+            "Disk Read Curve": "disk_read",
+            "Disk Write Curve": "disk_write",
+            "Network Send Curve": "net_sent",
+            "Network Receive Curve": "net_recv",
+            "Background Color": "background",
+            "Grid Color": "grid"
+        }
         selected_element = self.graph_selector.currentText()
+        color_key = element_map.get(selected_element)
         current_colors = self.get_current_graph_colors()
-        current_color = current_colors.get(selected_element, 'None')
+        current_color = current_colors.get(color_key, 'None') if color_key else 'None'
 
         if current_color == 'None':
             self.color_display.setText("Current: None (Theme Default)")
-            self.color_display.setStyleSheet("border: 1px solid #ccc; padding: 5px; min-width: 100px; background: #f5f5f5;")
+            self.color_display.setStyleSheet(
+                "border: 1px solid #ccc; padding: 5px; min-width: 100px; "
+                "background: #f5f5f5; color: #333333;")
+            self.color_preview_swatch.setStyleSheet("background-color: #888888;")
+            self.color_preview_hex.setText("(Theme Default)")
+            self.color_preview_hex.setStyleSheet("color: white; font-style: italic;")
         else:
             self.color_display.setText(f"Current: {current_color}")
             color = QColor(current_color)
             if color.isValid():
-                self.color_display.setStyleSheet(f"background-color: {current_color}; color: white; padding: 5px; min-width: 100px; font-weight: bold;")
+                self.color_display.setStyleSheet(
+                    f"background-color: {current_color}; color: white; "
+                    f"padding: 5px; min-width: 100px; font-weight: bold;")
+                brightness = (color.red() * 299 + color.green() * 587 + color.blue() * 114) // 1000
+                text_color = "#000000" if brightness > 128 else "#ffffff"
+                self.color_preview_swatch.setStyleSheet(f"background-color: {current_color};")
+                self.color_preview_hex.setText(current_color.upper())
+                self.color_preview_hex.setStyleSheet(f"color: {text_color}; font-weight: bold; font-size: 13px;")
