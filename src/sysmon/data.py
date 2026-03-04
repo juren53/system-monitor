@@ -42,6 +42,8 @@ class DataMixin:
             recv_rate = (net_io.bytes_recv - self.prev_net_io.bytes_recv) / elapsed / (1024**2)
             self.net_sent_data.append(max(0, sent_rate))
             self.net_recv_data.append(max(0, recv_rate))
+            self.net_sent_mb_data.append(max(0, (net_io.bytes_sent - self.prev_net_io.bytes_sent) / (1024**2)))
+            self.net_recv_mb_data.append(max(0, (net_io.bytes_recv - self.prev_net_io.bytes_recv) / (1024**2)))
             self.prev_net_io = net_io
 
         # Memory information

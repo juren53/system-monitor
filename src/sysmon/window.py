@@ -12,6 +12,15 @@ from PyQt5.QtCore import Qt, QTimer, QEvent
 from PyQt5.QtGui import QGuiApplication
 
 
+def _fmt_mb(mb):
+    if mb < 1.0:
+        return f"{mb * 1024:.1f} KB"
+    elif mb < 1000.0:
+        return f"{mb:.2f} MB"
+    else:
+        return f"{mb / 1024:.2f} GB"
+
+
 class WindowMixin:
     """Window management methods for SystemMonitor."""
 
@@ -506,4 +515,9 @@ class WindowMixin:
             html = f'<span style="color:{cs};">Sent: {sent:.2f} MB/s</span>'
             if recv is not None:
                 html += f'<span style="color:#888888;">  |  </span><span style="color:{cr};">Recv: {recv:.2f} MB/s</span>'
+            total_sent = sum(self.net_sent_mb_data)
+            total_recv = sum(self.net_recv_mb_data)
+            html += f'<br><span style="color:{cs};">↑ {_fmt_mb(total_sent)}</span>'
+            html += f'<span style="color:#888888;">  |  </span>'
+            html += f'<span style="color:{cr};">↓ {_fmt_mb(total_recv)}</span>'
             self._show_hover_label(self._net_hover_label, self.net_plot, html)

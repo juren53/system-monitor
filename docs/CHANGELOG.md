@@ -1,5 +1,24 @@
 # Changelog - sysmon.py
 
+## 2026-03-03 2337 CST - Network Hover Total MB Display [ v0.5.6 ]
+
+### New Feature: Cumulative MB totals in Network graph hover label
+- Network graph hover overlay now shows a second line with total data transferred during the visible time window
+- First line: instantaneous `Sent: X.XX MB/s | Recv: X.XX MB/s` (unchanged)
+- Second line: cumulative `↑ X.XX MB | ↓ X.XX MB` totals for the current window
+- Totals update automatically when the time window changes (Ctrl+Up/Down)
+- Values auto-scale: KB for < 1 MB, MB for < 1 GB, GB for larger amounts
+
+### Files Modified
+- **`src/sysmon.py`**: Added `net_sent_mb_data` and `net_recv_mb_data` deques
+- **`src/sysmon/data.py`**: Populate new deques with raw MB per update tick
+- **`src/sysmon/settings.py`**: Include new deques in `update_time_window()` trim loop
+- **`src/sysmon/window.py`**: Added `_fmt_mb()` helper; `on_net_hover()` computes and displays window totals
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.6
+- **`README.md`**, **`CLAUDE.md`**: Version updated to v0.5.6
+
+---
+
 ## 2026-02-25 0311 CST - Fix Dark Mode Theme Bugs [ v0.5.5 ]
 
 ### Bug Fix: Dark mode not restored on startup

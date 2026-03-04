@@ -37,8 +37,9 @@ class SettingsMixin:
 
         # Update all deques with new maxlen
         for data_list in [self.cpu_data, self.disk_read_data, self.disk_write_data,
-                         self.net_sent_data, self.net_recv_data, self.time_data,
-                         self.ram_percent_data, self.swap_percent_data]:
+                         self.net_sent_data, self.net_recv_data,
+                         self.net_sent_mb_data, self.net_recv_mb_data,
+                         self.time_data, self.ram_percent_data, self.swap_percent_data]:
             if len(data_list) > self.max_points:
                 # Trim from the left
                 for _ in range(len(data_list) - self.max_points):
