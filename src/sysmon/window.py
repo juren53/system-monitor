@@ -414,6 +414,12 @@ class WindowMixin:
         self.disk_plot.scene().sigMouseMoved.connect(self.on_disk_hover)
         self.net_plot.scene().sigMouseMoved.connect(self.on_net_hover)
 
+        # Last known scene position per graph — used to refresh labels while mouse is stationary
+        self._cpu_last_pos  = None
+        self._mem_last_pos  = None
+        self._disk_last_pos = None
+        self._net_last_pos  = None
+
         self._hover_label_map = {
             self.cpu_plot.viewport():    self._cpu_hover_label,
             self.memory_plot.viewport(): self._mem_hover_label,
@@ -474,7 +480,9 @@ class WindowMixin:
         """Show CPU usage overlay on the CPU graph."""
         if not self.cpu_plot.sceneBoundingRect().contains(pos):
             self._cpu_hover_label.hide()
+            self._cpu_last_pos = None
             return
+        self._cpu_last_pos = pos
         x = self.cpu_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
         val = self._get_value_at_x(self.cpu_data, x)
         if val is not None:
@@ -486,7 +494,9 @@ class WindowMixin:
         """Show RAM and Swap usage overlay on the Memory graph."""
         if not self.memory_plot.sceneBoundingRect().contains(pos):
             self._mem_hover_label.hide()
+            self._mem_last_pos = None
             return
+        self._mem_last_pos = pos
         x = self.memory_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
         ram  = self._get_value_at_x(self.ram_percent_data, x)
         swap = self._get_value_at_x(self.swap_percent_data, x)
@@ -502,7 +512,9 @@ class WindowMixin:
         """Show Disk I/O overlay on the Disk graph."""
         if not self.disk_plot.sceneBoundingRect().contains(pos):
             self._disk_hover_label.hide()
+            self._disk_last_pos = None
             return
+        self._disk_last_pos = pos
         x = self.disk_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
         read  = self._get_value_at_x(self.disk_read_data, x)
         write = self._get_value_at_x(self.disk_write_data, x)
@@ -523,7 +535,9 @@ class WindowMixin:
         """Show Network overlay on the Network graph."""
         if not self.net_plot.sceneBoundingRect().contains(pos):
             self._net_hover_label.hide()
+            self._net_last_pos = None
             return
+        self._net_last_pos = pos
         x = self.net_plot.getPlotItem().getViewBox().mapSceneToView(pos).x()
         sent = self._get_value_at_x(self.net_sent_data, x)
         recv = self._get_value_at_x(self.net_recv_data, x)
@@ -539,3 +553,11 @@ class WindowMixin:
             html += f'<span style="color:#888888;">  |  </span>'
             html += f'<span style="color:{cr};">↓ {_fmt_mb(total_recv)}</span>'
             self._show_hover_label(self._net_hover_label, self.net_plot, html, align='right')
+
+    def refresh_hover_labels(self):
+        """Re-fire hover handlers using the last known mouse position so labels
+        update with fresh data even when the mouse is stationary."""
+        if self._cpu_last_pos  is not None: self.on_cpu_hover(self._cpu_last_pos)
+        if self._mem_last_pos  is not None: self.on_memory_hover(self._mem_last_pos)
+        if self._disk_last_pos is not None: self.on_disk_hover(self._disk_last_pos)
+        if self._net_last_pos  is not None: self.on_net_hover(self._net_last_pos)

@@ -106,6 +106,10 @@ class DataMixin:
         self.net_sent_curve.setData(time_array, net_sent_smoothed)
         self.net_recv_curve.setData(time_array, net_recv_smoothed)
 
+        # Refresh hover labels so they show live values even when mouse is stationary
+        if hasattr(self, 'refresh_hover_labels'):
+            self.refresh_hover_labels()
+
     def apply_smoothing(self, data):
         """Apply moving average smoothing to data
 

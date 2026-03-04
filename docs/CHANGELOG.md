@@ -1,5 +1,20 @@
 # Changelog - sysmon.py
 
+## 2026-03-04 1120 CST - Live hover label refresh while mouse is stationary [ v0.5.9a ]
+
+### Fix: Hover labels now update continuously when mouse is held still over a graph
+- Stored last known scene position per graph (`_cpu/mem/disk/net_last_pos`)
+- Added `refresh_hover_labels()` — re-fires each hover handler with the stored position
+- `update_plots()` (200ms timer) calls `refresh_hover_labels()` so label values stay in sync with live data even when the mouse does not move
+- Labels still hide immediately when the mouse leaves the graph viewport (no change to that behaviour)
+
+### Files Modified
+- **`src/sysmon/window.py`**: Added `_*_last_pos` variables; updated `on_*_hover()` to save/clear pos; added `refresh_hover_labels()`
+- **`src/sysmon/data.py`**: `update_plots()` calls `refresh_hover_labels()` at end of each cycle
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.9a
+
+---
+
 ## 2026-03-04 1045 CST - Graph Colors dialog preview swatch [ v0.5.9 ]
 
 ### Fix: Graph Colors dialog now shows a real color preview
