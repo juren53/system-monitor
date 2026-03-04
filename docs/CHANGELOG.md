@@ -1,5 +1,34 @@
 # Changelog - sysmon.py
 
+## 2026-03-04 0709 CST - ThemeManager Integration: 6 Rich Themes [ v0.5.8 ]
+
+### New Feature: ThemeManager theme system replaces simple Auto/Dark/Light dialog
+- Integrated ThemeManager library (`src/sysmon/theme_registry.py`) providing 6 named themes
+- **Built-in themes**: Dark, Light
+- **Popular themes**: Solarized Dark, Solarized Light, Dracula, GitHub
+- Config > Theme menu replaced with a categorized submenu (Built-in / Popular)
+- Each theme entry is checkable — active theme is indicated with a checkmark
+- Themes apply immediately with no restart required
+- Selected theme persists across sessions via `current_theme` key in preferences.json
+- Old `theme_mode` preference (`auto`/`dark`/`light`) migrated automatically on first load
+
+### Change: Theme palette now driven by UIPalette color data
+- `apply_application_theme()` builds QPalette from `UIPalette` fields via `_palette_from_theme()`
+- `is_dark_theme()` classifies dark vs. light by theme name set (`dark`, `solarized_dark`, `dracula`)
+- Graph colors and hover label styles continue to use binary dark/light classification
+
+### Files Modified
+- **`src/sysmon/theme_registry.py`**: New file — ThemeManager core registry (6 built-in themes)
+- **`src/sysmon/theme.py`**: New `_palette_from_theme()`, `switch_theme()`, `update_theme_menu_states()`; updated `is_dark_theme()` and `apply_application_theme()`
+- **`src/sysmon/menu.py`**: Theme submenu with Built-in / Popular categories replaces single action
+- **`src/sysmon/settings.py`**: `save_preferences()` saves `current_theme`; `change_theme()` dialog removed
+- **`src/sysmon/window.py`**: `load_window_geometry()` loads `current_theme` with migration from `theme_mode`
+- **`src/sysmon.py`**: `self.theme_mode` replaced by `self.current_theme` and `self.theme_actions`
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.8
+- **`README.md`**, **`CLAUDE.md`**: Version updated to v0.5.8
+
+---
+
 ## 2026-03-04 0003 CST - Disk I/O Hover Cumulative MB Totals + Upper-Right Label [ v0.5.7 ]
 
 ### New Feature: Cumulative MB totals in Disk I/O graph hover label

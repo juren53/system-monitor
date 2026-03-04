@@ -9,7 +9,6 @@ import json
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                               QPushButton, QMessageBox, QFileDialog,
                               QInputDialog, QColorDialog, QComboBox,
-                              QGroupBox, QRadioButton, QDialogButtonBox,
                               QSpinBox, QFrame)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QColor
@@ -135,7 +134,7 @@ class SettingsMixin:
                 'always_on_top': self.always_on_top,
                 'invert_axis': self.invert_axis,
                 'smoothing_window': self.smoothing_window,
-                'theme_mode': self.theme_mode,
+                'current_theme': self.current_theme,
                 'auto_check_updates': self.auto_check_updates,
                 'last_update_check': self.last_update_check,
                 'update_check_interval_days': self.update_check_interval_days,
@@ -314,77 +313,6 @@ class SettingsMixin:
             self.smoothing_window = level
             self.show_smoothing_status()
             self.save_preferences()
-
-    def change_theme(self):
-        """Configure theme mode (Auto/Light/Dark)"""
-        # Create dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Theme Selection")
-        dialog.setModal(True)
-        dialog.resize(400, 250)
-
-        layout = QVBoxLayout()
-
-        # Description
-        desc_label = QLabel(
-            "Select the theme mode for SysMon:\n\n"
-            "• Auto: Automatically detect system theme\n"
-            "• Light: Force light theme\n"
-            "• Dark: Force dark theme"
-        )
-        desc_label.setWordWrap(True)
-        layout.addWidget(desc_label)
-
-        # Radio buttons group
-        group_box = QGroupBox("Theme Mode")
-        group_layout = QVBoxLayout()
-
-        self.theme_auto_radio = QRadioButton("Auto (System Detection)")
-        self.theme_light_radio = QRadioButton("Light")
-        self.theme_dark_radio = QRadioButton("Dark")
-
-        # Set current selection
-        if self.theme_mode == 'auto':
-            self.theme_auto_radio.setChecked(True)
-        elif self.theme_mode == 'light':
-            self.theme_light_radio.setChecked(True)
-        elif self.theme_mode == 'dark':
-            self.theme_dark_radio.setChecked(True)
-
-        group_layout.addWidget(self.theme_auto_radio)
-        group_layout.addWidget(self.theme_light_radio)
-        group_layout.addWidget(self.theme_dark_radio)
-        group_box.setLayout(group_layout)
-        layout.addWidget(group_box)
-
-        # Dialog buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        button_box.accepted.connect(dialog.accept)
-        button_box.rejected.connect(dialog.reject)
-        layout.addWidget(button_box)
-
-        dialog.setLayout(layout)
-
-        # Show dialog and apply if accepted
-        if dialog.exec_() == QDialog.Accepted:
-            # Determine selected theme
-            old_theme = self.theme_mode
-            if self.theme_auto_radio.isChecked():
-                self.theme_mode = 'auto'
-            elif self.theme_light_radio.isChecked():
-                self.theme_mode = 'light'
-            elif self.theme_dark_radio.isChecked():
-                self.theme_mode = 'dark'
-
-            # Apply theme if changed
-            if old_theme != self.theme_mode:
-                self.apply_application_theme()
-                self.save_preferences()
-                QMessageBox.information(
-                    self,
-                    "Theme Changed",
-                    f"Theme set to: {self.theme_mode.capitalize()}\n\nThe new theme has been applied."
-                )
 
     def customize_graph_colors(self):
         """Enhanced graph colors customization with background/grid support"""

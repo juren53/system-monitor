@@ -82,7 +82,8 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         self.smoothing_window = 1  # Number of data points to average (1 = no smoothing)
         self.min_smoothing = 1     # Minimum smoothing (raw data)
         self.max_smoothing = 20    # Maximum smoothing (20-point moving average)
-        self.theme_mode = 'auto'   # Theme mode: 'auto', 'light', or 'dark'
+        self.current_theme = 'dark'  # ThemeManager theme name
+        self.theme_actions = {}      # Populated by setup_menu_bar()
         self.line_thickness = 2    # Graph line thickness (1-10, default 2)
 
         # Update checking configuration
@@ -132,9 +133,9 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
         # Load preferences after timer is created
         self.load_window_geometry()
 
-        # Re-apply theme now that saved theme_mode has been loaded from prefs.
+        # Re-apply theme now that saved current_theme has been loaded from prefs.
         # apply_application_theme() was called earlier in setup_ui() before
-        # load_window_geometry(), so it ran with the default 'auto' mode.
+        # load_window_geometry(), so it ran with the default theme.
         self.apply_application_theme()
 
         # Add periodic save timer as backup

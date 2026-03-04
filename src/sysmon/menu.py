@@ -114,10 +114,28 @@ class MenuMixin:
         smoothing_action.triggered.connect(self.change_smoothing_level)
         config_menu.addAction(smoothing_action)
 
-        theme_action = QAction('T&heme...', self)
-        theme_action.setStatusTip('Select theme mode (Auto/Light/Dark)')
-        theme_action.triggered.connect(self.change_theme)
-        config_menu.addAction(theme_action)
+        from sysmon.theme_registry import get_theme_registry, ThemeCategory
+
+        registry = get_theme_registry()
+        theme_menu = config_menu.addMenu('T&heme')
+
+        built_in_menu = theme_menu.addMenu('Built-&in')
+        for t in registry.get_themes_by_category(ThemeCategory.BUILT_IN):
+            action = QAction(t.display_name, self)
+            action.setCheckable(True)
+            action.triggered.connect(lambda checked, n=t.name: self.switch_theme(n))
+            built_in_menu.addAction(action)
+            self.theme_actions[t.name] = action
+
+        popular_menu = theme_menu.addMenu('&Popular')
+        for t in registry.get_themes_by_category(ThemeCategory.POPULAR):
+            action = QAction(t.display_name, self)
+            action.setCheckable(True)
+            action.triggered.connect(lambda checked, n=t.name: self.switch_theme(n))
+            popular_menu.addAction(action)
+            self.theme_actions[t.name] = action
+
+        self.update_theme_menu_states()
 
         graph_colors_action = QAction('&Graph Colors...', self)
         graph_colors_action.setStatusTip('Customize graph colors')

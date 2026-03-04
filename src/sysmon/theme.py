@@ -7,6 +7,10 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPalette, QColor
 import pyqtgraph as pg
 
+from sysmon.theme_registry import get_theme_registry, ThemeCategory
+
+_DARK_THEMES = {'dark', 'solarized_dark', 'dracula'}
+
 
 class ThemeMixin:
     """Theme management methods for SystemMonitor."""
@@ -56,71 +60,49 @@ class ThemeMixin:
             }
 
     def is_dark_theme(self):
-        """Check if application is using dark theme"""
-        # Check for manual theme override
-        if self.theme_mode == 'dark':
-            return True
-        elif self.theme_mode == 'light':
-            return False
-        # else: theme_mode == 'auto', use system detection
+        """Check if application is using a dark theme"""
+        return self.current_theme in _DARK_THEMES
 
-        palette = self.palette()
-        bg_color = palette.color(QPalette.Window)
-        # Consider dark if background lightness < 128
-        return bg_color.lightness() < 128
+    def _palette_from_theme(self, theme_name):
+        """Build a PyQt5 QPalette from a ThemeManager UIPalette."""
+        registry = get_theme_registry()
+        theme = registry.get_theme(theme_name) or registry.get_theme('dark')
+        ui = theme.ui_palette
+
+        palette = QPalette()
+        palette.setColor(QPalette.Window,          QColor(ui.window_color))
+        palette.setColor(QPalette.WindowText,      QColor(ui.window_text_color))
+        palette.setColor(QPalette.Base,            QColor(ui.base_color))
+        palette.setColor(QPalette.AlternateBase,   QColor(ui.alternate_base_color))
+        palette.setColor(QPalette.Text,            QColor(ui.text_color))
+        palette.setColor(QPalette.Button,          QColor(ui.button_color))
+        palette.setColor(QPalette.ButtonText,      QColor(ui.button_text_color))
+        palette.setColor(QPalette.Highlight,       QColor(ui.highlight_color))
+        palette.setColor(QPalette.HighlightedText, QColor(ui.highlighted_text_color))
+
+        # Tooltip colors derived from base/text
+        palette.setColor(QPalette.ToolTipBase, QColor(ui.base_color))
+        palette.setColor(QPalette.ToolTipText, QColor(ui.text_color))
+
+        # Disabled: window text at ~50% opacity
+        disabled_text = QColor(ui.window_text_color)
+        disabled_text.setAlpha(128)
+        palette.setColor(QPalette.Disabled, QPalette.WindowText, disabled_text)
+        palette.setColor(QPalette.Disabled, QPalette.Text,       disabled_text)
+        palette.setColor(QPalette.Disabled, QPalette.ButtonText, disabled_text)
+
+        return palette
 
     def apply_application_theme(self):
         """Apply theme palette to entire application (not just graphs)"""
-        is_dark = self.is_dark_theme()
-        palette = QPalette()
-
-        if is_dark:
-            # Dark theme colors
-            palette.setColor(QPalette.Window, QColor(53, 53, 53))
-            palette.setColor(QPalette.WindowText, QColor(200, 200, 200))
-            palette.setColor(QPalette.Base, QColor(35, 35, 35))
-            palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-            palette.setColor(QPalette.ToolTipBase, QColor(25, 25, 25))
-            palette.setColor(QPalette.ToolTipText, QColor(200, 200, 200))
-            palette.setColor(QPalette.Text, QColor(200, 200, 200))
-            palette.setColor(QPalette.Button, QColor(53, 53, 53))
-            palette.setColor(QPalette.ButtonText, QColor(200, 200, 200))
-            palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
-            palette.setColor(QPalette.Link, QColor(42, 130, 218))
-            palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-            palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
-
-            # Disabled colors
-            palette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127, 127, 127))
-            palette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
-            palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(127, 127, 127))
-        else:
-            # Light theme colors
-            palette.setColor(QPalette.Window, QColor(240, 240, 240))
-            palette.setColor(QPalette.WindowText, QColor(0, 0, 0))
-            palette.setColor(QPalette.Base, QColor(255, 255, 255))
-            palette.setColor(QPalette.AlternateBase, QColor(245, 245, 245))
-            palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 220))
-            palette.setColor(QPalette.ToolTipText, QColor(0, 0, 0))
-            palette.setColor(QPalette.Text, QColor(0, 0, 0))
-            palette.setColor(QPalette.Button, QColor(240, 240, 240))
-            palette.setColor(QPalette.ButtonText, QColor(0, 0, 0))
-            palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
-            palette.setColor(QPalette.Link, QColor(0, 0, 255))
-            palette.setColor(QPalette.Highlight, QColor(0, 120, 215))
-            palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
-
-            # Disabled colors
-            palette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(120, 120, 120))
-            palette.setColor(QPalette.Disabled, QPalette.Text, QColor(120, 120, 120))
-            palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(120, 120, 120))
+        palette = self._palette_from_theme(self.current_theme)
 
         # Apply palette to the application
         QApplication.instance().setPalette(palette)
 
         # Apply explicit menu bar stylesheet — Qt's native Windows style overrides
         # the palette for QMenuBar/QMenu, making text washed out in dark mode.
-        if is_dark:
+        if self.is_dark_theme():
             self.menuBar().setStyleSheet("""
                 QMenuBar {
                     background-color: #353535;
@@ -238,3 +220,17 @@ class ThemeMixin:
         self.net_plot.getAxis('bottom').setPen(axis_color)
         self.net_plot.getAxis('left').setTextPen(text_color)
         self.net_plot.getAxis('bottom').setTextPen(text_color)
+
+    def switch_theme(self, name):
+        """Switch to a named theme and apply immediately."""
+        if name == self.current_theme:
+            return
+        self.current_theme = name
+        self.apply_application_theme()
+        self.update_theme_menu_states()
+        self.save_preferences()
+
+    def update_theme_menu_states(self):
+        """Update checkmarks in the Theme submenu to reflect current theme."""
+        for theme_name, action in self.theme_actions.items():
+            action.setChecked(theme_name == self.current_theme)

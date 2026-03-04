@@ -190,7 +190,12 @@ class WindowMixin:
                     self.always_on_top = prefs.get('always_on_top', False)
                     self.invert_axis = prefs.get('invert_axis', False)
                     self.smoothing_window = prefs.get('smoothing_window', 1)
-                    self.theme_mode = prefs.get('theme_mode', 'auto')
+                    if 'current_theme' in prefs:
+                        self.current_theme = prefs['current_theme']
+                    elif 'theme_mode' in prefs:
+                        old = prefs['theme_mode']
+                        self.current_theme = 'light' if old == 'light' else 'dark'
+                    # else: keep __init__ default of 'dark'
                     self.auto_check_updates = prefs.get('auto_check_updates', False)
                     self.last_update_check = prefs.get('last_update_check', 0)
                     self.update_check_interval_days = prefs.get('update_check_interval_days', 7)
