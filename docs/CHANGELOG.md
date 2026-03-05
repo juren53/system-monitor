@@ -1,5 +1,19 @@
 # Changelog - sysmon.py
 
+## 2026-03-05 0830 CST - Hover labels 60% transparent [ v0.5.9b ]
+
+### Change: Hover label backgrounds are now semi-transparent
+- Background opacity reduced to 40% (60% transparent) so graph content shows through
+- Dark theme: `rgba(30, 30, 30, 102)` — was solid `#1e1e1e`
+- Light theme: `rgba(240, 240, 240, 102)` — was solid `#f0f0f0`
+- Text color remains fully opaque for readability
+
+### Files Modified
+- **`src/sysmon/window.py`**: `_hover_label_style()` updated to use `rgba()` backgrounds
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.9b
+
+---
+
 ## 2026-03-04 1120 CST - Live hover label refresh while mouse is stationary [ v0.5.9a ]
 
 ### Fix: Hover labels now update continuously when mouse is held still over a graph

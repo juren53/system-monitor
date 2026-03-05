@@ -370,10 +370,11 @@ class WindowMixin:
     # Hover Tracking Methods
 
     def _hover_label_style(self):
-        """Return hover label stylesheet appropriate for the current theme."""
+        """Return hover label stylesheet appropriate for the current theme.
+        Background is 60% transparent (alpha=102/255)."""
         if self.is_dark_theme():
             return (
-                "background-color: #1e1e1e;"
+                "background-color: rgba(30, 30, 30, 102);"
                 "color: #e0e0e0;"
                 "padding: 3px 6px;"
                 "border-radius: 3px;"
@@ -381,7 +382,7 @@ class WindowMixin:
             )
         else:
             return (
-                "background-color: #f0f0f0;"
+                "background-color: rgba(240, 240, 240, 102);"
                 "color: #1a1a1a;"
                 "padding: 3px 6px;"
                 "border-radius: 3px;"
