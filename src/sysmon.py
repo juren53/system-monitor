@@ -48,7 +48,7 @@ class SystemMonitor(ThemeMixin, MenuMixin, UpdatesMixin, MarkdownMixin,
                     QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SysMon - PyQtGraph Edition")
+        self.setWindowTitle(f"SysMon {VERSION}")
 
         # Set window icon (fallback for window-level icon)
         self.set_window_icon()

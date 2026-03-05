@@ -1,5 +1,17 @@
 # Changelog - sysmon.py
 
+## 2026-03-05 0957 CST - Title bar shows version number [ v0.5.9c ]
+
+### Change: Window title bar now displays the version number
+- Replaced static "SysMon - PyQtGraph Edition" title with dynamic `SysMon {VERSION}`
+- Title bar now reads e.g. `SysMon 0.5.9c`, always reflecting the current build
+
+### Files Modified
+- **`src/sysmon.py`**: `setWindowTitle()` updated to use `VERSION` constant
+- **`src/sysmon/constants.py`**: Version bumped to 0.5.9c
+
+---
+
 ## 2026-03-05 0830 CST - Hover labels 60% transparent [ v0.5.9b ]
 
 ### Change: Hover label backgrounds are now semi-transparent
