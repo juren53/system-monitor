@@ -23,7 +23,8 @@
       "Bash(dir:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path $env:USERPROFILE -Directory | Select-Object Name\")",
       "Bash(powershell -Command \"Get-ChildItem -Path $env:USERPROFILE\\\\Projects -Directory | Select-Object Name\")",
-      "Bash(TZ='America/Chicago' date +%Y-%m-%d %H%M CST:*)"
+      "Bash(TZ='America/Chicago' date +%Y-%m-%d %H%M CST:*)",
+      "Bash(TZ=\"America/Chicago\" date +%Y-%m-%d %H%M CST:*)"
     ]
   }
 }
