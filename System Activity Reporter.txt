@@ -1,0 +1,44 @@
+This error occurs because `sar` (System Activity Reporter) doesn't have any data files to read. The `sar` command is part of the `sysstat` package, which collects system performance data, but data collection isn't currently enabled on your system.
+
+Here's how to fix it:
+
+## Enable sysstat data collection
+
+1. **Edit the sysstat configuration file:**
+   ```bash
+   sudo nano /etc/default/sysstat
+   ```
+
+2. **Change `ENABLED="false"` to `ENABLED="true"`**
+   
+   Save and exit (Ctrl+X, then Y, then Enter)
+
+3. **Restart the sysstat service:**
+   ```bash
+   sudo systemctl restart sysstat
+   ```
+
+4. **Enable it to start on boot:**
+   ```bash
+   sudo systemctl enable sysstat
+   ```
+
+## Wait for data collection
+
+After enabling it, you'll need to wait a bit for data to be collected. The system collects data at regular intervals (usually every 10 minutes by default). You can check if data collection is working:
+
+```bash
+ls -l /var/log/sysstat/
+```
+
+## View current system stats immediately
+
+If you want to see system activity right now without waiting, you can use:
+
+```bash
+sar -u 1 5    # CPU usage, 1 second intervals, 5 times
+sar -r 1 5    # Memory usage
+sar -b 1 5    # I/O statistics
+```
+
+This will show real-time data without needing historical logs.

@@ -1,0 +1,39 @@
+Here's a draft request you can use:
+
+---
+
+**Subject: Request to upgrade gnome-system-monitor in LMDE**
+
+Hello,
+
+I'd like to request an upgrade of gnome-system-monitor in LMDE from version 42.0 to a more recent stable release.
+
+**Current situation:**
+- LMDE currently ships gnome-system-monitor 42.0
+- The latest stable version is 46.x (as of GNOME 46 release)
+
+**Reasons for the request:**
+The newer versions include several improvements that would benefit LMDE users:
+- Enhanced system monitoring capabilities and better performance metrics
+- Improved UI/UX with better responsiveness
+- Bug fixes and stability improvements accumulated over multiple releases
+- Better support for modern system architectures
+
+**Feasibility:**
+I understand LMDE follows Debian Stable's philosophy, but I wanted to bring this to your attention in case:
+- A backport from Debian Testing/Unstable is feasible
+- The package could be included in Linux Mint's own repositories
+- This could be considered for the next LMDE release cycle
+
+I'm happy to test any backported versions if that would be helpful to the team.
+
+Thank you for considering this request and for all the excellent work on LMDE!
+
+---
+
+**Where to post this:**
+
+1. **Linux Mint Forums** (forums.linuxmint.com) - Post in the "LMDE" section under "Suggestions"
+2. **Or GitHub** - If you find an appropriate LMDE repository with issues enabled
+
+Would you like me to adjust the tone or add any specific features you're looking for?
